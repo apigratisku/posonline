@@ -118,6 +118,10 @@
                 }
             },
             drawCallback: function(settings) {
+                var $t = $(this);
+                $t.find('tbody tr').each(function() {
+                    $(this).find('td:last').addClass('dataTables_action');
+                });
                 adjustDataTableColumns(this.api());
                 if (typeof userDrawCallback === 'function') {
                     userDrawCallback.call(this, settings);

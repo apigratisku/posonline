@@ -750,6 +750,86 @@ body.has-mobile-nav {
     border-color: var(--border);
 }
 
+/* Kolom aksi tabel & DataTable: selalu 1 baris di semua view (termasuk PC desktop) */
+.dataTables_wrapper table.dataTable th:last-child,
+.dataTables_wrapper table.dataTable td:last-child,
+.dataTables_wrapper table.dataTable td.dataTables_action,
+.table .table-actions,
+.table .action-buttons,
+.table-actions,
+.action-buttons {
+    white-space: nowrap !important;
+}
+
+/* Tombol aksi: inline horizontal, tidak wrap, tanpa float */
+.dataTables_wrapper table.dataTable td:last-child .btn,
+.dataTables_wrapper table.dataTable td.dataTables_action .btn,
+.table-actions .btn,
+.action-buttons .btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    white-space: nowrap !important;
+    float: none !important;
+    margin-right: 0.25rem;
+    margin-bottom: 0 !important;
+    vertical-align: middle;
+}
+
+.dataTables_wrapper table.dataTable td:last-child .btn:last-child,
+.dataTables_wrapper table.dataTable td.dataTables_action .btn:last-child,
+.table-actions .btn:last-child,
+.action-buttons .btn:last-child {
+    margin-right: 0;
+}
+
+.dataTables_wrapper table.dataTable td:last-child .btn-group,
+.dataTables_wrapper table.dataTable td.dataTables_action .btn-group,
+.table-actions .btn-group,
+.action-buttons .btn-group {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}
+
+.dataTables_wrapper table.dataTable td:last-child .dropdown,
+.dataTables_wrapper table.dataTable td.dataTables_action .dropdown,
+.table-actions .dropdown,
+.action-buttons .dropdown {
+    display: inline-flex !important;
+    vertical-align: middle;
+}
+
+.dataTables_wrapper table.dataTable td:last-child a,
+.dataTables_wrapper table.dataTable td:last-child button,
+.dataTables_wrapper table.dataTable td:last-child .badge,
+.dataTables_wrapper table.dataTable td.dataTables_action a,
+.dataTables_wrapper table.dataTable td.dataTables_action button,
+.table-actions a,
+.table-actions button,
+.action-buttons a,
+.action-buttons button {
+    white-space: nowrap !important;
+}
+
+/* Container aksi eksplisit: flex 1 baris */
+.table-actions,
+.action-buttons,
+.table-action-container {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap !important;
+}
+
+/* Kolom aksi: lebar minimum, jangan jadi penyebab scroll horizontal */
+.dataTables_wrapper table.dataTable td:last-child {
+    width: 1%;
+    white-space: nowrap !important;
+}
+
 .table-responsive {
     border-radius: var(--radius);
     -webkit-overflow-scrolling: touch;
