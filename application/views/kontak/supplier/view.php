@@ -1,0 +1,67 @@
+<div class="page-header">
+    <h1 class="page-title"><?= $title ?></h1>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Detail Supplier</h5>
+        <a href="<?= base_url($back_url) ?>" class="btn btn-secondary">Kembali</a>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <tr>
+                <th width="200">ID</th>
+                <td><?= $data->id ?></td>
+            </tr>
+            <tr>
+                <th>Kode</th>
+                <td><?= htmlspecialchars($data->kode) ?></td>
+            </tr>
+            <tr>
+                <th>Nama</th>
+                <td><?= htmlspecialchars($data->nama) ?></td>
+            </tr>
+            <tr>
+                <th>Telepon</th>
+                <td><?= htmlspecialchars($data->telepon ?: '-') ?></td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td><?= htmlspecialchars($data->email ?: '-') ?></td>
+            </tr>
+            <tr>
+                <th>Alamat</th>
+                <td><?= htmlspecialchars($data->alamat ?: '-') ?></td>
+            </tr>
+            <tr>
+                <th>NPWP</th>
+                <td><?= htmlspecialchars($data->npwp ?: '-') ?></td>
+            </tr>
+            <tr>
+                <th>Rekening</th>
+                <td><?= htmlspecialchars($data->rekening ?: '-') ?></td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>
+                    <?php if ($data->is_active): ?>
+                        <span class="badge bg-success">Aktif</span>
+                    <?php else: ?>
+                        <span class="badge bg-danger">Tidak Aktif</span>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <th>Tanggal Dibuat</th>
+                <td><?= date('d/m/Y H:i', strtotime($data->created_at)) ?></td>
+            </tr>
+            <?php if ($data->updated_at): ?>
+            <tr>
+                <th>Tanggal Diupdate</th>
+                <td><?= date('d/m/Y H:i', strtotime($data->updated_at)) ?></td>
+            </tr>
+            <?php endif; ?>
+        </table>
+    </div>
+</div>
+

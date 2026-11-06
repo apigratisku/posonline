@@ -1,0 +1,346 @@
+/* Mobile Bottom Navigation — Apotek POS */
+
+:root {
+    --mobile-nav-height: 64px;
+    --mobile-nav-fab-size: 56px;
+    --mobile-nav-bg: #1e3a8a;
+    --mobile-nav-bg-dark: #0f172a;
+    --mobile-nav-active: #60a5fa;
+    --mobile-nav-text: rgba(255, 255, 255, 0.75);
+    --mobile-nav-text-active: #ffffff;
+    --mobile-sheet-z: 1050;
+    --mobile-nav-z: 1040;
+    --mobile-overlay-z: 1045;
+}
+
+.mobile-bottom-nav,
+.mobile-layanan-sheet,
+.mobile-sheet-overlay {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    body.has-mobile-nav {
+        padding-bottom: calc(var(--mobile-nav-height) + 8px);
+    }
+
+    body.has-mobile-nav .content-wrapper {
+        padding-bottom: 0.5rem;
+    }
+
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--mobile-nav-height);
+        background: linear-gradient(180deg, var(--mobile-nav-bg) 0%, var(--mobile-nav-bg-dark) 100%);
+        box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.25);
+        z-index: var(--mobile-nav-z);
+        align-items: flex-end;
+        justify-content: space-around;
+        padding: 0 4px 6px;
+        padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 2px;
+        padding: 6px 4px 4px;
+        min-height: 44px;
+        min-width: 44px;
+        color: var(--mobile-nav-text);
+        text-decoration: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.2s ease, transform 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+        font-family: inherit;
+    }
+
+    .mobile-nav-item:hover,
+    .mobile-nav-item:focus {
+        color: var(--mobile-nav-text-active);
+        text-decoration: none;
+    }
+
+    .mobile-nav-item.active,
+    .mobile-nav-item.active .mobile-nav-icon {
+        color: var(--mobile-nav-active);
+    }
+
+    .mobile-nav-item--cart.active .mobile-nav-label {
+        color: var(--mobile-nav-active);
+    }
+
+    .mobile-nav-icon {
+        font-size: 1.25rem;
+        line-height: 1;
+        position: relative;
+    }
+
+    .mobile-nav-label {
+        font-size: 0.575rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .mobile-bottom-nav .mobile-nav-item:not(.mobile-nav-item--cart) {
+        padding: 6px 2px 4px;
+    }
+
+    /* Center FAB — Kasir */
+    .mobile-nav-item--cart {
+        position: relative;
+        flex: 0 0 auto;
+        margin: 0 4px;
+        padding-bottom: 0;
+    }
+
+    .mobile-nav-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--mobile-nav-fab-size);
+        height: var(--mobile-nav-fab-size);
+        border-radius: 50%;
+        background: #ffffff;
+        color: var(--mobile-nav-bg);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(255, 255, 255, 0.15);
+        margin-top: -28px;
+        position: relative;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .mobile-nav-item--cart:hover .mobile-nav-fab,
+    .mobile-nav-item--cart.active .mobile-nav-fab {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(96, 165, 250, 0.3);
+    }
+
+    .mobile-nav-fab .mobile-nav-icon {
+        font-size: 1.4rem;
+        color: var(--mobile-nav-bg);
+    }
+
+    .mobile-nav-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+        border: 2px solid #fff;
+    }
+
+    .mobile-nav-badge:empty,
+    .mobile-nav-badge[data-count="0"] {
+        display: none;
+    }
+
+    /* Menu Sheet */
+    .mobile-sheet-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        z-index: var(--mobile-overlay-z);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        backdrop-filter: blur(2px);
+    }
+
+    .mobile-sheet-overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .mobile-layanan-sheet {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 85vh;
+        background: #ffffff;
+        border-radius: 1.25rem 1.25rem 0 0;
+        z-index: var(--mobile-sheet-z);
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.15);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .mobile-layanan-sheet.is-open {
+        transform: translateY(0);
+    }
+
+    .mobile-sheet-handle {
+        width: 40px;
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        margin: 12px auto 8px;
+        flex-shrink: 0;
+    }
+
+    .mobile-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.25rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .mobile-sheet-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .mobile-sheet-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .mobile-sheet-close:hover {
+        background: #e2e8f0;
+    }
+
+    .mobile-sheet-body {
+        overflow-y: auto;
+        padding: 1rem 1.25rem 1.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mobile-sheet-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .mobile-sheet-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .mobile-sheet-group-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #1e3a8a;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .mobile-sheet-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .mobile-sheet-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 0.75rem;
+        border-radius: 0.85rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+        text-decoration: none;
+        transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+        min-height: 44px;
+    }
+
+    .mobile-sheet-item:hover,
+    .mobile-sheet-item:focus {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e3a8a;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+
+    .mobile-sheet-item-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+        color: #fff;
+        background: #1e3a8a;
+    }
+
+    .mobile-sheet-item-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.3;
+    }
+
+    /* Account sheet */
+    .mobile-account-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .mobile-account-actions a {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-radius: 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+        min-height: 48px;
+    }
+
+    .mobile-account-actions a i {
+        width: 20px;
+        color: #1e3a8a;
+    }
+
+    .mobile-account-actions a.danger {
+        color: #dc2626;
+    }
+
+    .mobile-account-actions a.danger i {
+        color: #dc2626;
+    }
+}

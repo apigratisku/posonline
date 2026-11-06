@@ -1,0 +1,39 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Dev: localhost / *.local (termasuk ntbdev.local)
+    RewriteCond %{HTTP_HOST} ^localhost$ [OR]
+    RewriteCond %{HTTP_HOST} ^127\.0\.0\.1$ [OR]
+    RewriteCond %{HTTP_HOST} \.(test|local)$ [NC]
+    RewriteRule ^ - [E=IS_DEV:1]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # DEV: subfolder /root/demo/pos/
+    RewriteCond %{ENV:IS_DEV} =1
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /root/demo/pos/index.php/$1 [L,QSA]
+
+    # PRODUCTION: root path
+    RewriteCond %{ENV:IS_DEV} !=1
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+</IfModule>
+
+# Prevent directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(\.htaccess|\.htpasswd|\.git|composer\.(json|lock)|package\.json|\.env)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
