@@ -290,6 +290,16 @@
         transform: translateY(-2px);
     }
 
+    .mobile-sheet-item.active {
+        background: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e3a8a;
+    }
+
+    .mobile-sheet-item.active .mobile-sheet-item-icon {
+        background: #1d4ed8;
+    }
+
     .mobile-sheet-item-icon {
         width: 44px;
         height: 44px;

@@ -28,13 +28,7 @@ $toko_logo = (isset($profil_toko) && !empty($profil_toko->logo) && is_file(FCPAT
             </li>
             <?php endif; ?>
 
-            <!-- Cara Penggunaan -->
-            <li>
-                <a href="<?= base_url('tutorial') ?>" class="<?= strtolower($this->router->class) == 'tutorial' ? 'active' : '' ?>">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Cara Penggunaan</span>
-                </a>
-            </li>
+            
 
             <!-- Master Data -->
              <?php if (can_view('master')): ?>
@@ -310,7 +304,13 @@ $toko_logo = (isset($profil_toko) && !empty($profil_toko->logo) && is_file(FCPAT
                 </ul>
             </li>
             <?php endif; ?>
-            
+            <!-- Cara Penggunaan -->
+            <li>
+                <a href="<?= base_url('tutorial') ?>" class="<?= strtolower($this->router->class) == 'tutorial' ? 'active' : '' ?>">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Cara Penggunaan</span>
+                </a>
+            </li>
            
         </ul>
     </nav>

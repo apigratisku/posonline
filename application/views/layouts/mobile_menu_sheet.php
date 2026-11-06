@@ -24,16 +24,6 @@ $is_kasir_role = ($this->session->userdata('peran_kode') === 'kasir');
         </div>
         <?php endif; ?>
 
-        <div class="mobile-sheet-group">
-            <div class="mobile-sheet-group-title">Bantuan</div>
-            <div class="mobile-sheet-grid">
-                <a href="<?= base_url('tutorial') ?>" class="mobile-sheet-item">
-                    <span class="mobile-sheet-item-icon"><i class="fas fa-question-circle"></i></span>
-                    <span class="mobile-sheet-item-label">Cara Penggunaan</span>
-                </a>
-            </div>
-        </div>
-
         <?php if (can_view('master')): ?>
         <div class="mobile-sheet-group">
             <div class="mobile-sheet-group-title">Master Data</div>
@@ -407,6 +397,17 @@ $is_kasir_role = ($this->session->userdata('peran_kode') === 'kasir');
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Bantuan / Cara Penggunaan (paling bawah) -->
+        <div class="mobile-sheet-group">
+            <div class="mobile-sheet-group-title">Bantuan</div>
+            <div class="mobile-sheet-grid">
+                <a href="<?= base_url('tutorial') ?>" class="mobile-sheet-item <?= strtolower($this->router->class) == 'tutorial' ? 'active' : '' ?>">
+                    <span class="mobile-sheet-item-icon"><i class="fas fa-question-circle"></i></span>
+                    <span class="mobile-sheet-item-label">Cara Penggunaan</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
