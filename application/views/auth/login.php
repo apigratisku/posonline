@@ -19,22 +19,23 @@ $toko_logo = ($toko_data && !empty($toko_data->logo) && is_file(FCPATH . 'assets
     <div class="login-page">
         <div class="login-hero">
             <div class="login-hero-content">
-                <div class="login-brand" style="margin-bottom: 2rem; gap: 0.75rem;">
+                <div class="login-brand" style="margin-bottom: 2rem; gap: 1rem; flex-direction: column;">
                 <?php if ($toko_logo): ?>
-                    <img src="<?= $toko_logo ?>" alt="<?= htmlspecialchars($toko_nama) ?>" class="brand-logo brand-logo-login" style="height: 44px; max-height: 44px;">
+                    <img src="<?= $toko_logo ?>" alt="<?= htmlspecialchars($toko_nama) ?>" class="brand-logo brand-logo-login" style="height: 220px; max-height: 220px; max-width: 320px;">
+                    <span style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px;"><?= htmlspecialchars($toko_nama) ?></span>
                 <?php else: ?>
-                    <i class="fas fa-store" style="font-size: 2.25rem;"></i>
+                    <i class="fas fa-store" style="font-size: 3rem;"></i>
+                    <span style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px;"><?= htmlspecialchars($toko_nama) ?></span>
                 <?php endif; ?>
-                <span style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px;"><?= htmlspecialchars($toko_nama) ?></span>
-            </div>
-            <div class="tagline">Sistem Kasir Online</div>
-            <?php if (!empty($toko_data->alamat ?? '')): ?>
-                <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i><?= htmlspecialchars($toko_data->alamat) ?></p>
-            <?php endif; ?>
-            <?php if (!empty($toko_data->telepon ?? '')): ?>
-                <p class="mb-2"><i class="fas fa-phone me-1"></i><?= htmlspecialchars($toko_data->telepon) ?></p>
-            <?php endif; ?>
-            <p>Manajemen penjualan produk dengan teknologi terdepan dan interface yang user-friendly</p>
+                </div>
+                <div class="tagline">Sistem Kasir Online</div>
+                <?php if (!empty($toko_data->alamat ?? '')): ?>
+                    <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i><?= htmlspecialchars($toko_data->alamat) ?></p>
+                <?php endif; ?>
+                <?php if (!empty($toko_data->telepon ?? '')): ?>
+                    <p class="mb-2"><i class="fas fa-phone me-1"></i><?= htmlspecialchars($toko_data->telepon) ?></p>
+                <?php endif; ?>
+                <p>Manajemen penjualan produk dengan teknologi terdepan dan interface yang user-friendly</p>
             </div>
         </div>
 
