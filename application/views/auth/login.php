@@ -77,16 +77,7 @@ $toko_logo = ($toko_data && !empty($toko_data->logo) && is_file(FCPATH . 'assets
                     </button>
                 </form>
 
-                <div class="mt-4 p-3 bg-light rounded border text-start">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small fw-bold text-muted"><i class="fas fa-info-circle me-1"></i>Akun Demo:</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;" onclick="$('#username').val('demo');$('#password').val('demo123');">Gunakan</button>
-                    </div>
-                    <div class="small text-secondary">
-                        Username: <code>demo</code><br>
-                        Password: <code>demo123</code>
-                    </div>
-                </div>
+                
             </div>
         </div>
     </div>
