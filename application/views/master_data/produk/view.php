@@ -55,6 +55,10 @@
                         <td>Rp <?= number_format($data->harga_beli, 0, ',', '.') ?></td>
                     </tr>
                     <tr>
+                        <th>% Keuntungan</th>
+                        <td><?= number_format($data->persentase_keuntungan, 2, ',', '.') ?>%</td>
+                    </tr>
+                    <tr>
                         <th>Harga Jual</th>
                         <td>Rp <?= number_format($data->harga_jual, 0, ',', '.') ?></td>
                     </tr>

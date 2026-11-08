@@ -42,7 +42,7 @@ class MasterProduk extends MY_Controller {
         $this->check_permission('master', 'view');
         
         $params = array(
-            'columns' => array('mp.id', 'mp.kode', 'mp.barcode', 'mp.nama', 'mk.nama', 'ms.nama', 'mg.nama', 'mp.harga_jual', 'mp.stok_akhir', 'mp.is_active'),
+            'columns' => array('mp.id', 'mp.kode', 'mp.barcode', 'mp.nama', 'mk.nama', 'ms.nama', 'mg.nama', 'mp.harga_beli', 'mp.persentase_keuntungan', 'mp.harga_jual', 'mp.stok_akhir', 'mp.is_active'),
             'search_fields' => array('mp.kode', 'mp.barcode', 'mp.nama', 'mk.nama', 'ms.nama')
         );
         
@@ -60,6 +60,8 @@ class MasterProduk extends MY_Controller {
                 isset($row->kategori_nama) ? $row->kategori_nama : '-',
                 isset($row->satuan_nama) ? $row->satuan_nama : '-',
                 isset($row->gudang_nama) ? $row->gudang_nama : '-',
+                number_format($row->harga_beli, 0, ',', '.'),
+                number_format($row->persentase_keuntungan, 2, ',', '.') . '%',
                 number_format($row->harga_jual, 0, ',', '.'),
                 '<span class="badge ' . ($stok < $row->stok_minimal ? 'bg-danger' : 'bg-success') . '">' . $stok . '</span>',
                 $row->is_active ? '<span class="badge bg-success">Aktif</span>' : '<span class="badge bg-danger">Tidak Aktif</span>',
@@ -166,6 +168,12 @@ class MasterProduk extends MY_Controller {
             redirect('masterdata/masterproduk/create');
             return;
         }
+        $harga_beli = floatval($this->input->post('harga_beli')) ?: 0;
+        $persentase = floatval($this->input->post('persentase_keuntungan')) ?: 0;
+        if ($persentase < 0) {
+            $persentase = 0;
+        }
+        $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
         $data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
@@ -175,8 +183,9 @@ class MasterProduk extends MY_Controller {
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
-            'harga_beli' => $this->input->post('harga_beli') ?: 0,
-            'harga_jual' => $this->input->post('harga_jual') ?: 0,
+            'harga_beli' => $harga_beli,
+            'persentase_keuntungan' => $persentase,
+            'harga_jual' => $harga_jual,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'stok_awal' => $this->input->post('stok_awal') ?: 0,
@@ -295,6 +304,12 @@ class MasterProduk extends MY_Controller {
             redirect('masterdata/masterproduk/edit/' . $id);
             return;
         }
+        $harga_beli = floatval($this->input->post('harga_beli')) ?: 0;
+        $persentase = floatval($this->input->post('persentase_keuntungan')) ?: 0;
+        if ($persentase < 0) {
+            $persentase = 0;
+        }
+        $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
         $update_data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
@@ -304,8 +319,9 @@ class MasterProduk extends MY_Controller {
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
-            'harga_beli' => $this->input->post('harga_beli') ?: 0,
-            'harga_jual' => $this->input->post('harga_jual') ?: 0,
+            'harga_beli' => $harga_beli,
+            'persentase_keuntungan' => $persentase,
+            'harga_jual' => $harga_jual,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'expired_date' => $this->input->post('expired_date') ?: null,
@@ -322,6 +338,18 @@ class MasterProduk extends MY_Controller {
         }
     }
     
+    /**
+     * Hitung harga jual dari harga beli + persentase keuntungan (dibulatkan ke rupiah)
+     */
+    private function hitung_harga_jual($harga_beli, $persentase) {
+        $harga_beli = floatval($harga_beli);
+        $persentase = floatval($persentase);
+        if ($harga_beli <= 0 || $persentase <= 0) {
+            return round($harga_beli, 0);
+        }
+        return round($harga_beli + ($harga_beli * $persentase / 100), 0);
+    }
+
     /**
      * View - Show single record
      */
@@ -417,6 +445,12 @@ class MasterProduk extends MY_Controller {
             return;
         }
         
+        $harga_beli = floatval($this->input->post('harga_beli')) ?: 0;
+        $persentase = floatval($this->input->post('persentase_keuntungan')) ?: 0;
+        if ($persentase < 0) {
+            $persentase = 0;
+        }
+        $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
         $data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
@@ -426,8 +460,9 @@ class MasterProduk extends MY_Controller {
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
-            'harga_beli' => $this->input->post('harga_beli') ?: 0,
-            'harga_jual' => $this->input->post('harga_jual') ?: 0,
+            'harga_beli' => $harga_beli,
+            'persentase_keuntungan' => $persentase,
+            'harga_jual' => $harga_jual,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'stok_awal' => $this->input->post('stok_awal') ?: 0,
@@ -476,7 +511,19 @@ class MasterProduk extends MY_Controller {
      */
     public function ajax_delete($id) {
         $this->check_permission('master', 'delete');
-        
+
+        $produk = $this->master_produk_model->get_by_id($id);
+        if (!$produk) {
+            $this->ajax_response(false, 'Data tidak ditemukan');
+            return;
+        }
+
+        // Blokir hapus jika produk masih direferensikan transaksi
+        if ($this->master_produk_model->is_in_use($id)) {
+            $this->ajax_response(false, 'Data tidak dapat dihapus karena masih digunakan pada transaksi. Nonaktifkan produk bila sudah tidak dijual.');
+            return;
+        }
+
         if ($this->master_produk_model->delete($id)) {
             $this->ajax_response(true, 'Data berhasil dihapus');
         } else {

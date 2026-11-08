@@ -5,7 +5,7 @@ class Master_produk_model extends MY_Model {
     
     protected $table = 'master_produk';
     protected $primary_key = 'id';
-    protected $fillable = array('kode', 'barcode', 'nama', 'kategori_id', 'satuan_id', 'rak_id', 'gudang_id', 'pajak_id', 'harga_beli', 'harga_jual', 'stok_minimal', 'stok_maksimal', 'stok_awal', 'stok_akhir', 'expired_date', 'gambar', 'deskripsi', 'is_resep', 'is_active');
+    protected $fillable = array('kode', 'barcode', 'nama', 'kategori_id', 'satuan_id', 'rak_id', 'gudang_id', 'pajak_id', 'harga_beli', 'persentase_keuntungan', 'harga_jual', 'stok_minimal', 'stok_maksimal', 'stok_awal', 'stok_akhir', 'expired_date', 'gambar', 'deskripsi', 'is_resep', 'is_active');
     protected $timestamps = true;
     
     public function __construct() {
@@ -117,6 +117,45 @@ class Master_produk_model extends MY_Model {
         return $this->db->get()->result();
     }
     
+    /**
+     * Tabel transaksi yang mereferensi produk_id.
+     * Dipakai untuk mencegah hapus produk yang masih punya riwayat.
+     */
+    private $reference_tables = array(
+        'defecta',
+        'faktur_pembelian_detail',
+        'faktur_penjualan_detail',
+        'kartu_stok',
+        'konsinyasi_masuk_detail',
+        'mutasi_antar_outlet_detail',
+        'penerimaan_resep_detail',
+        'penjualan_detail',
+        'penyesuaian_stok',
+        'permintaan_mutasi_detail',
+        'perpindahan_stok_detail',
+        'pesanan_pembelian_detail',
+        'pesanan_penjualan_detail',
+        'promo_bundel_detail',
+        'rencana_pembelian_detail',
+        'retur_pembelian_detail',
+        'retur_penjualan_detail',
+        'stok_kadaluarsa',
+        'stok_opname_detail',
+        'template_racikan_detail'
+    );
+
+    /**
+     * Cek apakah produk masih direferensikan tabel transaksi
+     */
+    public function is_in_use($id) {
+        foreach ($this->reference_tables as $tbl) {
+            if ($this->db->where('produk_id', $id)->count_all_results($tbl) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * DataTables with relations
      */

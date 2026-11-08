@@ -77,10 +77,23 @@
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
-                        <label for="harga_jual" class="form-label">Harga Jual</label>
-                        <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control', 'value' => set_value('harga_jual', 0)]) ?>
+                        <label for="persentase_keuntungan" class="form-label">% Keuntungan</label>
+                        <div class="input-group">
+                            <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'persentase_keuntungan', 'id' => 'persentase_keuntungan', 'class' => 'form-control', 'value' => set_value('persentase_keuntungan', 0)]) ?>
+                            <span class="input-group-text">%</span>
+                        </div>
                     </div>
                 </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="harga_jual" class="form-label">Harga Jual</label>
+                        <?= form_input(['type' => 'number', 'step' => '1', 'min' => '0', 'name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control', 'value' => set_value('harga_jual', 0), 'readonly' => true]) ?>
+                        <div class="form-text">Otomatis: Harga Beli + % Keuntungan (dibulatkan)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="expired_date" class="form-label">Tanggal Kadaluarsa</label>
@@ -154,6 +167,18 @@ function loadRakByGudang(gudangId, selectedRakId) {
 }
 
 $(document).ready(function() {
+    // Auto hitung harga jual dari harga beli + persentase keuntungan
+    function hitungHargaJual() {
+        var beli = parseFloat($('#harga_beli').val()) || 0;
+        var persen = parseFloat($('#persentase_keuntungan').val()) || 0;
+        var jual = beli + (beli * persen / 100);
+        jual = Math.round(jual);
+        $('#harga_jual').val(jual);
+    }
+
+    $('#harga_beli, #persentase_keuntungan').on('input change', hitungHargaJual);
+    hitungHargaJual();
+
     $('#gudang_id').on('change', function() {
         loadRakByGudang($(this).val(), '');
     });

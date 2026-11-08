@@ -36,6 +36,8 @@
                     <th>Kategori</th>
                     <th>Satuan</th>
                     <th>Gudang</th>
+                    <th>Harga Beli</th>
+                    <th>% Untung</th>
                     <th>Harga Jual</th>
                     <th>Stok</th>
                     <th>Status</th>
@@ -71,7 +73,10 @@ $(document).ready(function() {
             { data: 7 },
             { data: 8 },
             { data: 9 },
-            { data: 10, orderable: false, searchable: false }
+            { data: 10 },
+            { data: 11 },
+            { data: 12 },
+            { data: 13, orderable: false, searchable: false }
         ]
     });
 
