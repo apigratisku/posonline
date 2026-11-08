@@ -75,8 +75,7 @@ $(document).ready(function() {
             { data: 9 },
             { data: 10 },
             { data: 11 },
-            { data: 12 },
-            { data: 13, orderable: false, searchable: false }
+            { data: 12, orderable: false, searchable: false }
         ]
     });
 

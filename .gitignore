@@ -5,9 +5,9 @@ application/cache/*
 
 application/logs/*
 !application/logs/index.html
-application/session/*
+application/sessions/*
 !application/*/.htaccess
-
+application/sessions/ci_session/
 composer.lock
 tests/mocks/database/ci_test.sqlite
 
