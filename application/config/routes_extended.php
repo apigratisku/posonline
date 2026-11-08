@@ -224,6 +224,10 @@ apotik_register_crud_routes($route, 'pengaturan/metode-pembayaran', 'Pengaturan/
 $route['pengaturan/metodepembayaran'] = 'Pengaturan/MetodePembayaran/index';
 apotik_register_crud_routes($route, 'pengaturan/metodepembayaran', 'Pengaturan/MetodePembayaran');
 
+// Pengaturan - reset data (khusus admin)
+$route['pengaturan/reset-data'] = 'Pengaturan/ResetData/index';
+$route['pengaturan/reset-data/execute'] = 'Pengaturan/ResetData/execute';
+
 // Analisis ajax
 $analisis_modules = array(
     'Analisis/Pareto' => 'Analisis/Pareto',

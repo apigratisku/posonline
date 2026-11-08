@@ -284,6 +284,9 @@ $toko_logo = (isset($profil_toko) && !empty($profil_toko->logo) && is_file(FCPAT
                     <li><a href="<?= base_url('pengaturan/profil') ?>">Profil Toko</a></li>
                     <li><a href="<?= base_url('pengaturan/metode-pembayaran') ?>">Metode Pembayaran</a></li>
                     <li><a href="<?= base_url('pengaturan/konfigurasi') ?>">Konfigurasi</a></li>
+                    <?php if ($this->session->userdata('peran_kode') === 'admin'): ?>
+                    <li><a href="<?= base_url('pengaturan/reset-data') ?>" class="text-danger">Reset Data</a></li>
+                    <?php endif; ?>
                 </ul>
             </li>
             <?php endif; ?>
