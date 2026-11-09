@@ -106,7 +106,7 @@
                 <td colspan="2"><?= htmlspecialchars($d->produk_nama ?? '') ?></td>
             </tr>
             <tr>
-                <td><?= number_format($d->qty, 0) ?> x <?= number_format($d->harga, 0, ',', '.') ?></td>
+                <td><?= number_format($d->qty, 0) ?><?= !empty($d->satuan_nama) ? ' ' . htmlspecialchars($d->satuan_nama) : '' ?> x <?= number_format($d->harga, 0, ',', '.') ?></td>
                 <td class="text-right"><?= number_format($d->subtotal, 0, ',', '.') ?></td>
             </tr>
             <?php if ($d->diskon > 0): ?>

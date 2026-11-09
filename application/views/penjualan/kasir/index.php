@@ -67,7 +67,14 @@
 
             <div class="pos-cart-header">
                 <h5><i class="fas fa-shopping-basket me-1"></i> Keranjang</h5>
-                <span class="pos-cart-count" id="posCartCount">0</span>
+                <div class="pos-cart-header-actions">
+                    <select class="pos-harga-type" id="tipeHarga" aria-label="Jenis Harga"<?= empty($assigned_gudang) ? ' disabled' : '' ?>>
+                        <option value="non_resep">Harga Non-Resep</option>
+                        <option value="resep">Harga Resep</option>
+                        <option value="pelanggan">Harga Pelanggan</option>
+                    </select>
+                    <span class="pos-cart-count" id="posCartCount">0</span>
+                </div>
             </div>
 
             <div class="pos-cart-list" id="posCartList">

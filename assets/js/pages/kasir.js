@@ -59,6 +59,8 @@ function renderSearchDropdown(results) {
         var outOfStock = stok <= 0;
         var activeClass = index === searchActiveIndex ? ' is-active' : '';
         var stockClass = outOfStock ? ' is-empty' : '';
+        var konversi = parseInt(produk.satuan_konversi, 10) || 1;
+        var satuanBeli = produk.satuan_beli_nama || '';
 
         html += '<div class="pos-search-item' + activeClass + (outOfStock ? ' is-out-of-stock' : '') + '" data-index="' + index + '" role="option">';
         html += '<div class="pos-search-item-main">';
@@ -66,8 +68,11 @@ function renderSearchDropdown(results) {
         html += '<div class="pos-search-item-code">' + escapeHtml(produk.kode || '-') + '</div>';
         html += '</div>';
         html += '<div class="pos-search-item-meta">';
-        html += '<div class="pos-search-item-price">' + formatCurrency(produk.harga_jual || 0) + '</div>';
+        html += '<div class="pos-search-item-price">' + formatCurrency(getProdukHarga(produk)) + '</div>';
         html += '<span class="pos-search-item-stock' + stockClass + '">Stok: ' + stok + ' ' + escapeHtml(satuan) + '</span>';
+        if (konversi > 1 && satuanBeli && satuanBeli !== '-') {
+            html += '<span class="pos-search-item-konversi">1 ' + escapeHtml(satuanBeli) + ' = ' + konversi + ' ' + escapeHtml(satuan) + '</span>';
+        }
         html += '</div>';
         html += '</div>';
     });
@@ -244,6 +249,104 @@ function handleSearchEnter() {
     searchProdukLive(term, true);
 }
 
+/**
+ * Susun daftar satuan jual yang tersedia untuk sebuah produk.
+ * Harga tiap satuan dihitung otomatis dari harga satuan terkecil.
+ */
+function buildSatuanOptions(produk) {
+    var konversi = parseInt(produk.satuan_konversi, 10) || 1;
+    if (konversi < 1) konversi = 1;
+    var satuanId = produk.satuan_id ? parseInt(produk.satuan_id, 10) : null;
+    var satuanBeliId = produk.satuan_beli_id ? parseInt(produk.satuan_beli_id, 10) : null;
+    var options = [];
+
+    options.push({
+        id: satuanId,
+        nama: produk.satuan_nama || produk.satuan || 'Satuan',
+        konversi: 1
+    });
+
+    if (satuanBeliId && konversi > 1 && satuanBeliId !== satuanId) {
+        options.push({
+            id: satuanBeliId,
+            nama: produk.satuan_beli_nama || 'Kemasan',
+            konversi: konversi
+        });
+    }
+
+    return options;
+}
+
+/**
+ * Jenis harga aktif pada halaman kasir.
+ */
+function getTipeHarga() {
+    return $('#tipeHarga').val() || 'non_resep';
+}
+
+/**
+ * Ambil harga dasar (satuan terkecil) sesuai jenis harga terpilih.
+ * Jika harga jenis tersebut kosong/0, fallback ke harga non-resep.
+ */
+function getHargaBase(item, tipe) {
+    tipe = tipe || getTipeHarga();
+    var map = item.harga_base || {};
+    var harga = parseFloat(map[tipe]);
+    if (!harga || harga <= 0) {
+        harga = parseFloat(map.non_resep) || 0;
+    }
+    return harga;
+}
+
+/**
+ * Harga produk (satuan terkecil) sesuai jenis harga terpilih.
+ */
+function getProdukHarga(produk, tipe) {
+    return getHargaBase({
+        harga_base: {
+            non_resep: parseFloat(produk.harga_jual) || 0,
+            resep: parseFloat(produk.harga_resep) || 0,
+            pelanggan: parseFloat(produk.harga_pelanggan) || 0
+        }
+    }, tipe);
+}
+
+/**
+ * Harga per satuan terpilih = harga dasar x konversi satuan.
+ */
+function getHargaSatuan(item, konversi, tipe) {
+    konversi = parseInt(konversi, 10) || 1;
+    if (konversi < 1) konversi = 1;
+    return getHargaBase(item, tipe) * konversi;
+}
+
+/**
+ * Terapkan jenis harga ke seluruh item keranjang dan hitung ulang total.
+ */
+function applyTipeHarga(tipe) {
+    tipe = tipe || getTipeHarga();
+    cart.forEach(function (item) {
+        item.harga = getHargaSatuan(item, item.konversi, tipe);
+        item.subtotal = (item.qty * item.harga) - item.diskon;
+    });
+    renderCart();
+    calculateTotal();
+}
+
+function findSatuanOption(item, satuanId) {
+    var options = item.satuan_options || [];
+    for (var i = 0; i < options.length; i++) {
+        if (String(options[i].id) === String(satuanId)) return options[i];
+    }
+    return null;
+}
+
+function maxQtyForSatuan(stok, konversi) {
+    konversi = parseInt(konversi, 10) || 1;
+    if (konversi < 1) konversi = 1;
+    return Math.floor((parseInt(stok, 10) || 0) / konversi);
+}
+
 function addToCart(produk) {
     if (!produk || !produk.id) {
         showNotification('error', 'Data produk tidak valid');
@@ -257,26 +360,45 @@ function addToCart(produk) {
         showNotification('error', 'Harga produk tidak valid');
         return;
     }
-    var existingIndex = cart.findIndex(function (item) { return item.produk_id === produk.id; });
+    var options = buildSatuanOptions(produk);
+    var defaultSatuan = options[0];
+    var existingIndex = cart.findIndex(function (item) {
+        return item.produk_id === produk.id && String(item.satuan_id) === String(defaultSatuan.id);
+    });
     if (existingIndex >= 0) {
-        var newQty = cart[existingIndex].qty + 1;
-        if (newQty > produk.stok) {
-            showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + produk.stok);
+        var existing = cart[existingIndex];
+        var maxQty = maxQtyForSatuan(existing.stok, existing.konversi);
+        var newQty = existing.qty + 1;
+        if (newQty > maxQty) {
+            showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + maxQty + ' ' + (existing.satuan_nama || ''));
             return;
         }
-        cart[existingIndex].qty = newQty;
-        cart[existingIndex].subtotal = (cart[existingIndex].qty * cart[existingIndex].harga) - cart[existingIndex].diskon;
+        existing.qty = newQty;
+        existing.subtotal = (existing.qty * existing.harga) - existing.diskon;
     } else {
-        cart.push({
+        var harga_base = {
+            non_resep: parseFloat(produk.harga_jual) || 0,
+            resep: parseFloat(produk.harga_resep) || 0,
+            pelanggan: parseFloat(produk.harga_pelanggan) || 0
+        };
+        var newItem = {
             produk_id: produk.id,
             kode: produk.kode || '',
             nama: produk.nama || 'Produk',
+            satuan_id: defaultSatuan.id,
+            satuan_nama: defaultSatuan.nama,
+            konversi: defaultSatuan.konversi,
+            satuan_options: options,
+            harga_base: harga_base,
             qty: 1,
-            harga: parseFloat(produk.harga_jual) || 0,
+            harga: 0,
             diskon: 0,
-            subtotal: parseFloat(produk.harga_jual) || 0,
+            subtotal: 0,
             stok: parseInt(produk.stok) || 0
-        });
+        };
+        newItem.harga = getHargaSatuan(newItem, newItem.konversi);
+        newItem.subtotal = newItem.harga;
+        cart.push(newItem);
     }
     renderCart();
     calculateTotal();
@@ -296,15 +418,64 @@ function updateQty(index, qty) {
         removeFromCart(index);
         return;
     }
-    if (qty > cart[index].stok) {
-        showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + cart[index].stok);
-        cart[index].qty = cart[index].stok;
-        renderCart();
-        calculateTotal();
-        return;
+    var maxQty = maxQtyForSatuan(cart[index].stok, cart[index].konversi);
+    if (qty > maxQty) {
+        showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + maxQty + ' ' + (cart[index].satuan_nama || ''));
+        qty = maxQty;
+        if (qty <= 0) {
+            removeFromCart(index);
+            return;
+        }
     }
     cart[index].qty = qty;
     cart[index].subtotal = (cart[index].qty * cart[index].harga) - cart[index].diskon;
+    renderCart();
+    calculateTotal();
+}
+
+/**
+ * Ganti satuan jual item keranjang (mis. Strip -> Box).
+ * Harga, subtotal, dan batas stok langsung menyesuaikan satuan terpilih.
+ */
+function changeSatuan(index, satuanId) {
+    if (index < 0 || index >= cart.length) return;
+    var item = cart[index];
+    var opt = findSatuanOption(item, satuanId);
+    if (!opt) return;
+    if (String(opt.id) === String(item.satuan_id)) return;
+
+    var maxQty = maxQtyForSatuan(item.stok, opt.konversi);
+    if (maxQty < 1) {
+        showNotification('error', 'Stok tidak mencukupi untuk satuan ' + opt.nama);
+        renderCart();
+        return;
+    }
+
+    // Gabung bila sudah ada baris lain dengan produk & satuan yang sama
+    var dupIndex = -1;
+    for (var i = 0; i < cart.length; i++) {
+        if (i !== index && cart[i].produk_id === item.produk_id && String(cart[i].satuan_id) === String(opt.id)) {
+            dupIndex = i;
+            break;
+        }
+    }
+
+    item.satuan_id = opt.id;
+    item.satuan_nama = opt.nama;
+    item.konversi = opt.konversi;
+    item.harga = getHargaSatuan(item, opt.konversi);
+    item.qty = Math.min(item.qty, maxQty);
+    item.subtotal = (item.qty * item.harga) - item.diskon;
+
+    if (dupIndex >= 0) {
+        var dup = cart[dupIndex];
+        var dupMax = maxQtyForSatuan(dup.stok, dup.konversi);
+        var mergedQty = Math.min(dup.qty + item.qty, dupMax);
+        dup.qty = mergedQty;
+        dup.subtotal = (dup.qty * dup.harga) - dup.diskon;
+        cart.splice(index, 1);
+    }
+
     renderCart();
     calculateTotal();
 }
@@ -320,10 +491,23 @@ function renderCart() {
             '</div>';
     } else {
         cart.forEach(function (item, index) {
+            var satuanNama = item.satuan_nama || '-';
+            var options = item.satuan_options || [];
             html += '<div class="pos-cart-item" data-index="' + index + '">';
             html += '<div>';
             html += '<div class="pos-cart-item-name">' + escapeHtml(item.nama) + '</div>';
-            html += '<div class="pos-cart-item-code">' + escapeHtml(item.kode) + ' &middot; ' + formatCurrency(item.harga) + '</div>';
+            if (options.length > 1) {
+                html += '<select class="pos-cart-item-satuan" onchange="changeSatuan(' + index + ', this.value)" aria-label="Satuan">';
+                options.forEach(function (opt) {
+                    var selected = String(opt.id) === String(item.satuan_id) ? ' selected' : '';
+                    html += '<option value="' + opt.id + '"' + selected + '>' +
+                        escapeHtml(opt.nama) + ' &middot; ' + formatCurrency(getHargaSatuan(item, opt.konversi)) + '</option>';
+                });
+                html += '</select>';
+            } else {
+                html += '<div class="pos-cart-item-code">Satuan: ' + escapeHtml(satuanNama) + '</div>';
+            }
+            html += '<div class="pos-cart-item-code">' + escapeHtml(item.kode) + ' &middot; ' + formatCurrency(item.harga) + ' / ' + escapeHtml(satuanNama) + '</div>';
             html += '</div>';
             html += '<button type="button" class="pos-cart-item-delete" onclick="removeFromCart(' + index + ')" aria-label="Hapus"><i class="fas fa-trash"></i></button>';
             html += '<div class="pos-cart-item-footer">';
@@ -449,7 +633,9 @@ function processPayment() {
             showNotification('error', 'Data item tidak valid pada item ke-' + (i + 1));
             return;
         }
-        if (cart[i].qty > cart[i].stok) {
+        var konversi = parseInt(cart[i].konversi, 10) || 1;
+        if (konversi < 1) konversi = 1;
+        if (cart[i].qty * konversi > cart[i].stok) {
             showNotification('error', 'Stok tidak mencukupi untuk produk: ' + cart[i].nama);
             return;
         }
@@ -613,6 +799,11 @@ $(document).ready(function () {
     $('#bayar').on('focus', handleBayarFocus);
     $('#bayar').on('input', handleBayarInput);
     $('#bayar').on('change', calculateKembalian);
+
+    // Ganti jenis harga (Non-Resep / Resep / Pelanggan)
+    $('#tipeHarga').on('change', function () {
+        applyTipeHarga($(this).val());
+    });
 
     // Load printer setting
     var savedPrinterType = localStorage.getItem('pos_printer_type') || 'browser';
@@ -878,7 +1069,8 @@ var ThermalPrinter = {
 
         items.forEach(function (item) {
             appendText(item.produk_nama + "\n");
-            var qtyStr = item.qty + " x " + parseFloat(item.harga).toLocaleString('id-ID');
+            var satuanLabel = item.satuan_nama ? ' ' + item.satuan_nama : '';
+            var qtyStr = item.qty + satuanLabel + " x " + parseFloat(item.harga).toLocaleString('id-ID');
             var subtotalStr = parseFloat(item.subtotal).toLocaleString('id-ID');
             var spaces = 32 - qtyStr.length - subtotalStr.length;
             if (spaces < 1) spaces = 1;

@@ -115,10 +115,11 @@ class Master_produk_model extends MY_Model {
      * Search products
      */
     public function search($term, $limit = 20) {
-        $this->db->select('mp.*, mk.nama as kategori_nama, ms.nama as satuan_nama');
+        $this->db->select('mp.*, mk.nama as kategori_nama, ms.nama as satuan_nama, msb.nama as satuan_beli_nama');
         $this->db->from($this->table . ' mp');
         $this->db->join('master_kategori mk', 'mk.id = mp.kategori_id', 'left');
         $this->db->join('master_satuan ms', 'ms.id = mp.satuan_id', 'left');
+        $this->db->join('master_satuan msb', 'msb.id = mp.satuan_beli_id', 'left');
         $this->db->where('mp.is_active', 1);
         $this->db->group_start();
         $this->db->like('mp.kode', $term);

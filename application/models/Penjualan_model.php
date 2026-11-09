@@ -80,10 +80,10 @@ class Penjualan_model extends MY_Model {
      * Get details
      */
     public function get_details($penjualan_id) {
-        $this->db->select('pd.*, mp.kode as produk_kode, mp.nama as produk_nama, ms.nama as satuan_nama');
+        $this->db->select('pd.*, mp.kode as produk_kode, mp.nama as produk_nama, mp.satuan_id as satuan_jual_id, mp.satuan_beli_id, mp.satuan_konversi, ms.nama as satuan_nama');
         $this->db->from('penjualan_detail pd');
         $this->db->join('master_produk mp', 'mp.id = pd.produk_id');
-        $this->db->join('master_satuan ms', 'ms.id = mp.satuan_id', 'left');
+        $this->db->join('master_satuan ms', 'ms.id = COALESCE(pd.satuan_id, mp.satuan_id)', 'left', false);
         $this->db->where('pd.penjualan_id', $penjualan_id);
         return $this->db->get()->result();
     }

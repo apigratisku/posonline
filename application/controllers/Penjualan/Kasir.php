@@ -32,6 +32,23 @@ class Kasir extends MY_Controller {
     }
 
     /**
+     * Konversi qty dari satuan terpilih ke satuan jual terkecil.
+     * Stok & kartu_stok selalu disimpan dalam satuan jual terkecil.
+     */
+    private function resolve_konversi_satuan($produk, $satuan_id) {
+        $satuan_id = intval($satuan_id);
+        $satuan_beli_id = isset($produk->satuan_beli_id) ? intval($produk->satuan_beli_id) : 0;
+        $konversi = isset($produk->satuan_konversi) ? intval($produk->satuan_konversi) : 1;
+        if ($konversi < 1) {
+            $konversi = 1;
+        }
+        if ($satuan_id && $satuan_beli_id && $satuan_id === $satuan_beli_id) {
+            return $konversi;
+        }
+        return 1;
+    }
+
+    /**
      * Validate gudang_id matches user's assigned gudang
      */
     private function assert_user_gudang($gudang_id) {
@@ -94,6 +111,11 @@ class Kasir extends MY_Controller {
         foreach ($produks as $produk) {
             $stok = $this->master_produk_model->get_stok($produk->id, $gudang_id);
             $satuan_nama = isset($produk->satuan_nama) && !empty($produk->satuan_nama) ? $produk->satuan_nama : '-';
+            $satuan_beli_nama = isset($produk->satuan_beli_nama) && !empty($produk->satuan_beli_nama) ? $produk->satuan_beli_nama : '-';
+            $konversi = isset($produk->satuan_konversi) ? intval($produk->satuan_konversi) : 1;
+            if ($konversi < 1) {
+                $konversi = 1;
+            }
             
             $results[] = array(
                 'id' => $produk->id,
@@ -101,9 +123,15 @@ class Kasir extends MY_Controller {
                 'barcode' => isset($produk->barcode) ? $produk->barcode : '',
                 'nama' => $produk->nama,
                 'harga_jual' => floatval($produk->harga_jual),
+                'harga_resep' => floatval($produk->harga_resep),
+                'harga_pelanggan' => floatval($produk->harga_pelanggan),
                 'stok' => $stok,
                 'satuan' => $satuan_nama,
                 'satuan_nama' => $satuan_nama,
+                'satuan_id' => isset($produk->satuan_id) && $produk->satuan_id ? intval($produk->satuan_id) : null,
+                'satuan_beli_id' => isset($produk->satuan_beli_id) && $produk->satuan_beli_id ? intval($produk->satuan_beli_id) : null,
+                'satuan_beli_nama' => $satuan_beli_nama,
+                'satuan_konversi' => $konversi,
                 'text' => $produk->nama . ' (' . $produk->kode . ') - Stok: ' . $stok . ' ' . $satuan_nama
             );
         }
@@ -131,9 +159,10 @@ class Kasir extends MY_Controller {
         }
         
         // Search by kode barang (primary - no new DB field needed)
-        $this->db->select('mp.*, ms.nama as satuan_nama');
+        $this->db->select('mp.*, ms.nama as satuan_nama, msb.nama as satuan_beli_nama');
         $this->db->from('master_produk mp');
         $this->db->join('master_satuan ms', 'ms.id = mp.satuan_id', 'left');
+        $this->db->join('master_satuan msb', 'msb.id = mp.satuan_beli_id', 'left');
         $this->db->where('mp.kode', $barcode);
         $this->db->where('mp.is_active', 1);
         $produk = $this->db->get()->row();
@@ -147,15 +176,26 @@ class Kasir extends MY_Controller {
         if ($produk) {
             $stok = $this->master_produk_model->get_stok($produk->id, $gudang_id);
             $satuan_nama = isset($produk->satuan_nama) && !empty($produk->satuan_nama) ? $produk->satuan_nama : '-';
+            $satuan_beli_nama = isset($produk->satuan_beli_nama) && !empty($produk->satuan_beli_nama) ? $produk->satuan_beli_nama : '-';
+            $konversi = isset($produk->satuan_konversi) ? intval($produk->satuan_konversi) : 1;
+            if ($konversi < 1) {
+                $konversi = 1;
+            }
             
             $this->ajax_response(true, 'Produk ditemukan', array(
                 'id' => $produk->id,
                 'kode' => $produk->kode,
                 'nama' => $produk->nama,
                 'harga_jual' => floatval($produk->harga_jual),
+                'harga_resep' => floatval($produk->harga_resep),
+                'harga_pelanggan' => floatval($produk->harga_pelanggan),
                 'stok' => $stok,
                 'satuan' => $satuan_nama,
-                'satuan_nama' => $satuan_nama
+                'satuan_nama' => $satuan_nama,
+                'satuan_id' => isset($produk->satuan_id) && $produk->satuan_id ? intval($produk->satuan_id) : null,
+                'satuan_beli_id' => isset($produk->satuan_beli_id) && $produk->satuan_beli_id ? intval($produk->satuan_beli_id) : null,
+                'satuan_beli_nama' => $satuan_beli_nama,
+                'satuan_konversi' => $konversi
             ));
         } else {
             $this->ajax_response(false, 'Produk tidak ditemukan untuk kode: ' . $barcode);
@@ -243,11 +283,16 @@ class Kasir extends MY_Controller {
                 return;
             }
             
-            // Check stock availability BEFORE transaction
+            // Resolve satuan yang dipilih kasir (satuan pembelian dikonversi ke satuan jual terkecil)
+            $satuan_id = !empty($item['satuan_id']) ? intval($item['satuan_id']) : intval($produk->satuan_id);
+            $konversi = $this->resolve_konversi_satuan($produk, $satuan_id);
+            $qty_terkecil = $qty * $konversi;
+            
+            // Check stock availability BEFORE transaction (stok selalu dalam satuan jual terkecil)
             $stok = $this->master_produk_model->get_stok($item['produk_id'], $gudang_id);
-            if ($stok < $qty) {
+            if ($stok < $qty_terkecil) {
                 $produk_nama = isset($item['nama']) ? $item['nama'] : $produk->nama;
-                $this->ajax_response(false, 'Stok produk "' . $produk_nama . '" tidak mencukupi. Stok tersedia: ' . $stok . ', dibutuhkan: ' . $qty);
+                $this->ajax_response(false, 'Stok produk "' . $produk_nama . '" tidak mencukupi. Stok tersedia: ' . $stok . ', dibutuhkan: ' . $qty_terkecil);
                 return;
             }
         }
@@ -308,20 +353,28 @@ class Kasir extends MY_Controller {
             $qty = floatval($item['qty']);
             $harga = floatval($item['harga']);
             $diskon = isset($item['diskon']) ? floatval($item['diskon']) : 0;
-            
+
+            // Resolve satuan terpilih (sama seperti validasi di atas)
+            $produk = $this->master_produk_model->get_by_id($item['produk_id']);
+            $satuan_id = !empty($item['satuan_id']) ? intval($item['satuan_id']) : intval($produk->satuan_id);
+            $konversi = $this->resolve_konversi_satuan($produk, $satuan_id);
+            $qty_terkecil = $qty * $konversi;
+            $harga_terkecil = $konversi > 0 ? ($harga / $konversi) : $harga;
+
             // Double check stock (in case of concurrent transactions)
             $stok = $this->master_produk_model->get_stok($item['produk_id'], $gudang_id);
-            if ($stok < $qty) {
+            if ($stok < $qty_terkecil) {
                 $this->db->trans_rollback();
                 $produk_nama = isset($item['nama']) ? $item['nama'] : 'Produk ID ' . $item['produk_id'];
                 $this->ajax_response(false, 'Stok produk "' . $produk_nama . '" tidak mencukupi. Stok tersedia: ' . $stok);
                 return;
             }
             
-            // Insert detail
+            // Insert detail (qty & harga disimpan sesuai satuan yang dipilih kasir)
             $detail_data = array(
                 'penjualan_id' => $penjualan_id,
                 'produk_id' => intval($item['produk_id']),
+                'satuan_id' => $satuan_id ? $satuan_id : null,
                 'qty' => $qty,
                 'harga' => $harga,
                 'diskon' => $diskon,
@@ -335,7 +388,7 @@ class Kasir extends MY_Controller {
                 return;
             }
             
-            // Update kartu stok
+            // Update kartu stok (selalu dalam satuan jual terkecil)
             $kartu_data = array(
                 'produk_id' => intval($item['produk_id']),
                 'gudang_id' => $gudang_id,
@@ -343,8 +396,8 @@ class Kasir extends MY_Controller {
                 'referensi' => $penjualan_data['no_penjualan'],
                 'tipe' => 'keluar',
                 'qty_masuk' => 0,
-                'qty_keluar' => $qty,
-                'harga' => $harga,
+                'qty_keluar' => $qty_terkecil,
+                'harga' => $harga_terkecil,
                 'keterangan' => 'Penjualan: ' . $penjualan_data['no_penjualan']
             );
             

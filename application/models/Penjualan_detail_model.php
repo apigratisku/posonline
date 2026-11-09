@@ -5,7 +5,7 @@ class Penjualan_detail_model extends MY_Model {
     
     protected $table = 'penjualan_detail';
     protected $primary_key = 'id';
-    protected $fillable = array('penjualan_id', 'produk_id', 'qty', 'harga', 'diskon', 'subtotal');
+    protected $fillable = array('penjualan_id', 'produk_id', 'satuan_id', 'qty', 'harga', 'diskon', 'subtotal');
     protected $timestamps = false;
     
     public function __construct() {
