@@ -356,7 +356,7 @@ function addToCart(produk) {
         showNotification('error', 'Stok produk habis');
         return;
     }
-    if (!produk.harga_jual || produk.harga_jual <= 0) {
+    if (!getProdukHarga(produk) || getProdukHarga(produk) <= 0) {
         showNotification('error', 'Harga produk tidak valid');
         return;
     }
@@ -802,12 +802,24 @@ $(document).ready(function () {
 
     // Ganti jenis harga (Non-Resep / Resep / Pelanggan)
     $('#tipeHarga').on('change', function () {
-        applyTipeHarga($(this).val());
+        var tipe = $(this).val();
+        localStorage.setItem('pos_tipe_harga', tipe);
+        applyTipeHarga(tipe);
+        // Perbarui nominal pada dropdown hasil pencarian bila sedang terbuka
+        if (!$('#posSearchDropdown').is('[hidden]') && searchResults.length > 0) {
+            renderSearchDropdown(searchResults);
+        }
     });
 
     // Load printer setting
     var savedPrinterType = localStorage.getItem('pos_printer_type') || 'browser';
     setPrinterType(savedPrinterType);
+
+    // Pulihkan jenis harga terakhir yang dipilih kasir
+    var savedTipeHarga = localStorage.getItem('pos_tipe_harga');
+    if (savedTipeHarga) {
+        $('#tipeHarga').val(savedTipeHarga);
+    }
 
     renderCart();
     calculateTotal();
