@@ -31,12 +31,32 @@
                         <td><?= htmlspecialchars($data->nama) ?></td>
                     </tr>
                     <tr>
+                        <th>Pabrik</th>
+                        <td><?= htmlspecialchars($data->pabrik ?: '-') ?></td>
+                    </tr>
+                    <tr>
                         <th>Kategori</th>
                         <td><?= isset($data->kategori_nama) ? htmlspecialchars($data->kategori_nama) : '-' ?></td>
                     </tr>
                     <tr>
-                        <th>Satuan</th>
+                        <th>Golongan</th>
+                        <td><?= isset($data->golongan_nama) ? htmlspecialchars($data->golongan_nama) : '-' ?></td>
+                    </tr>
+                    <tr>
+                        <th>Satuan Jual Terkecil</th>
                         <td><?= isset($data->satuan_nama) ? htmlspecialchars($data->satuan_nama) : '-' ?></td>
+                    </tr>
+                    <tr>
+                        <th>Satuan Pembelian</th>
+                        <td><?= isset($data->satuan_beli_nama) ? htmlspecialchars($data->satuan_beli_nama) : '-' ?></td>
+                    </tr>
+                    <tr>
+                        <th>Konversi Satuan</th>
+                        <td><?= (int) $data->satuan_konversi ?> <?= isset($data->satuan_nama) ? htmlspecialchars($data->satuan_nama) : 'satuan' ?> / <?= isset($data->satuan_beli_nama) ? htmlspecialchars($data->satuan_beli_nama) : 'kemasan' ?></td>
+                    </tr>
+                    <tr>
+                        <th>Indikasi</th>
+                        <td><?= nl2br(htmlspecialchars($data->indikasi ?: '-')) ?></td>
                     </tr>
                     <tr>
                         <th>Rak</th>
@@ -52,15 +72,19 @@
                     </tr>
                     <tr>
                         <th>Harga Beli</th>
-                        <td>Rp <?= number_format($data->harga_beli, 0, ',', '.') ?></td>
+                        <td>Rp <?= number_format($data->harga_beli, 0, ',', '.') ?> / <?= isset($data->satuan_nama) ? htmlspecialchars($data->satuan_nama) : 'satuan' ?></td>
                     </tr>
                     <tr>
-                        <th>% Keuntungan</th>
-                        <td><?= number_format($data->persentase_keuntungan, 2, ',', '.') ?>%</td>
+                        <th>Harga Non-Resep</th>
+                        <td>Rp <?= number_format($data->harga_jual, 0, ',', '.') ?> <span class="text-muted">(margin <?= number_format($data->persentase_keuntungan, 2, ',', '.') ?>%)</span></td>
                     </tr>
                     <tr>
-                        <th>Harga Jual</th>
-                        <td>Rp <?= number_format($data->harga_jual, 0, ',', '.') ?></td>
+                        <th>Harga Resep</th>
+                        <td>Rp <?= number_format($data->harga_resep, 0, ',', '.') ?> <span class="text-muted">(margin <?= number_format($data->margin_resep, 2, ',', '.') ?>%)</span></td>
+                    </tr>
+                    <tr>
+                        <th>Harga Pelanggan</th>
+                        <td>Rp <?= number_format($data->harga_pelanggan, 0, ',', '.') ?> <span class="text-muted">(margin <?= number_format($data->margin_pelanggan, 2, ',', '.') ?>%)</span></td>
                     </tr>
                     <tr>
                         <th>Stok Minimal</th>

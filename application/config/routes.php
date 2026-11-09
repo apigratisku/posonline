@@ -195,6 +195,7 @@ $route['pembelian/faktur-pembelian'] = 'Pembelian/FakturPembelian/index';
 $route['pembelian/faktur-pembelian/ajax_list'] = 'Pembelian/FakturPembelian/ajax_list';
 $route['pembelian/faktur-pembelian/ajax_get/(:num)'] = 'Pembelian/FakturPembelian/ajax_get/$1';
 $route['pembelian/faktur-pembelian/ajax_save'] = 'Pembelian/FakturPembelian/ajax_save';
+$route['pembelian/faktur-pembelian/ajax_add_produk'] = 'Pembelian/FakturPembelian/ajax_add_produk';
 
 // Pembelian Routes - URL Shortcuts
 $route['pembelian/pesanan'] = 'Pembelian/PesananPembelian/index';
@@ -202,6 +203,7 @@ $route['pembelian/faktur'] = 'Pembelian/FakturPembelian/index';
 $route['pembelian/faktur/ajax_list'] = 'Pembelian/FakturPembelian/ajax_list';
 $route['pembelian/faktur/ajax_get/(:num)'] = 'Pembelian/FakturPembelian/ajax_get/$1';
 $route['pembelian/faktur/ajax_save'] = 'Pembelian/FakturPembelian/ajax_save';
+$route['pembelian/faktur/ajax_add_produk'] = 'Pembelian/FakturPembelian/ajax_add_produk';
 $route['pembelian/faktur/ajax_pay/(:num)'] = 'Pembelian/FakturPembelian/ajax_pay/$1';
 $route['pembelian/faktur/ajax_delete/(:num)'] = 'Pembelian/FakturPembelian/ajax_delete/$1';
 $route['pembelian/faktur-pembelian/ajax_pay/(:num)'] = 'Pembelian/FakturPembelian/ajax_pay/$1';

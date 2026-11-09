@@ -5,7 +5,7 @@ class Faktur_pembelian_model extends MY_Model {
     
     protected $table = 'faktur_pembelian';
     protected $primary_key = 'id';
-    protected $fillable = array('no_faktur', 'po_id', 'supplier_id', 'tanggal', 'jatuh_tempo', 'subtotal', 'diskon', 'pajak', 'total', 'status');
+    protected $fillable = array('no_faktur', 'po_id', 'supplier_id', 'jenis_pembayaran_id', 'tanggal', 'jatuh_tempo', 'subtotal', 'diskon', 'pajak', 'total', 'status');
     protected $timestamps = true;
     
     public function __construct() {
@@ -32,18 +32,20 @@ class Faktur_pembelian_model extends MY_Model {
     }
     
     public function get_by_id_with_relations($id) {
-        $this->db->select('fp.*, s.nama as supplier_nama, pp.no_po');
+        $this->db->select('fp.*, s.nama as supplier_nama, pp.no_po, mby.nama as jenis_pembayaran_nama');
         $this->db->from($this->table . ' fp');
         $this->db->join('supplier s', 's.id = fp.supplier_id');
         $this->db->join('pesanan_pembelian pp', 'pp.id = fp.po_id', 'left');
+        $this->db->join('metode_pembayaran mby', 'mby.id = fp.jenis_pembayaran_id', 'left');
         $this->db->where('fp.id', $id);
         return $this->db->get()->row();
     }
     
     public function get_details($faktur_id) {
-        $this->db->select('fpd.*, mp.kode as produk_kode, mp.nama as produk_nama');
+        $this->db->select('fpd.*, mp.kode as produk_kode, mp.nama as produk_nama, ms.nama as satuan_beli_nama');
         $this->db->from('faktur_pembelian_detail fpd');
         $this->db->join('master_produk mp', 'mp.id = fpd.produk_id');
+        $this->db->join('master_satuan ms', 'ms.id = fpd.satuan_beli_id', 'left');
         $this->db->where('fpd.faktur_id', $faktur_id);
         return $this->db->get()->result();
     }

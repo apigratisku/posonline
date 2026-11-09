@@ -7,6 +7,7 @@ class MasterProduk extends MY_Controller {
         parent::__construct();
         $this->load->model('master_produk_model');
         $this->load->model('master_kategori_model');
+        $this->load->model('master_golongan_model');
         $this->load->model('master_satuan_model');
         $this->load->model('master_rak_model');
         $this->load->model('master_gudang_model');
@@ -26,6 +27,7 @@ class MasterProduk extends MY_Controller {
                 array('label' => 'Master Produk')
             ),
             'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+            'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
             'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
             'raks' => array(),
             'gudangs' => $this->master_gudang_model->get_all(array('is_active' => 1)),
@@ -113,6 +115,7 @@ class MasterProduk extends MY_Controller {
             'form_action' => base_url('masterdata/masterproduk/store'),
             'back_url' => 'masterdata/masterproduk',
             'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+            'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
             'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
             'raks' => array(),
             'gudangs' => $this->master_gudang_model->get_all(array('is_active' => 1)),
@@ -140,6 +143,7 @@ class MasterProduk extends MY_Controller {
                 'form_action' => base_url('masterdata/masterproduk/store'),
                 'back_url' => 'masterdata/masterproduk',
                 'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+                'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
                 'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
                 'raks' => array(),
                 'gudangs' => $this->master_gudang_model->get_all(array('is_active' => 1)),
@@ -174,18 +178,31 @@ class MasterProduk extends MY_Controller {
             $persentase = 0;
         }
         $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
+        $margin_resep = floatval($this->input->post('margin_resep')) ?: 0;
+        $harga_resep = $this->hitung_harga_margin($harga_beli, $margin_resep, $this->input->post('harga_resep'));
+        $margin_pelanggan = floatval($this->input->post('margin_pelanggan')) ?: 0;
+        $harga_pelanggan = $this->hitung_harga_margin($harga_beli, $margin_pelanggan, $this->input->post('harga_pelanggan'));
         $data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
             'nama' => $this->input->post('nama'),
+            'pabrik' => $this->input->post('pabrik'),
             'kategori_id' => $this->input->post('kategori_id') ?: null,
+            'golongan_id' => $this->input->post('golongan_id') ?: null,
             'satuan_id' => $this->input->post('satuan_id') ?: null,
+            'satuan_beli_id' => $this->input->post('satuan_beli_id') ?: null,
+            'satuan_konversi' => intval($this->input->post('satuan_konversi')) ?: 1,
+            'indikasi' => $this->input->post('indikasi'),
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
             'harga_beli' => $harga_beli,
             'persentase_keuntungan' => $persentase,
             'harga_jual' => $harga_jual,
+            'margin_resep' => $margin_resep,
+            'harga_resep' => $harga_resep,
+            'margin_pelanggan' => $margin_pelanggan,
+            'harga_pelanggan' => $harga_pelanggan,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'stok_awal' => $this->input->post('stok_awal') ?: 0,
@@ -241,6 +258,7 @@ class MasterProduk extends MY_Controller {
             'back_url' => 'masterdata/masterproduk',
             'data' => $data,
             'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+            'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
             'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
             'raks' => $this->get_raks_for_gudang($data->gudang_id),
             'gudangs' => $this->master_gudang_model->get_all(array('is_active' => 1)),
@@ -276,6 +294,7 @@ class MasterProduk extends MY_Controller {
                 'back_url' => 'masterdata/masterproduk',
                 'data' => $data,
                 'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+                'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
                 'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
                 'raks' => $this->get_raks_for_gudang($data->gudang_id),
                 'gudangs' => $this->master_gudang_model->get_all(array('is_active' => 1)),
@@ -310,18 +329,31 @@ class MasterProduk extends MY_Controller {
             $persentase = 0;
         }
         $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
+        $margin_resep = floatval($this->input->post('margin_resep')) ?: 0;
+        $harga_resep = $this->hitung_harga_margin($harga_beli, $margin_resep, $this->input->post('harga_resep'));
+        $margin_pelanggan = floatval($this->input->post('margin_pelanggan')) ?: 0;
+        $harga_pelanggan = $this->hitung_harga_margin($harga_beli, $margin_pelanggan, $this->input->post('harga_pelanggan'));
         $update_data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
             'nama' => $this->input->post('nama'),
+            'pabrik' => $this->input->post('pabrik'),
             'kategori_id' => $this->input->post('kategori_id') ?: null,
+            'golongan_id' => $this->input->post('golongan_id') ?: null,
             'satuan_id' => $this->input->post('satuan_id') ?: null,
+            'satuan_beli_id' => $this->input->post('satuan_beli_id') ?: null,
+            'satuan_konversi' => intval($this->input->post('satuan_konversi')) ?: 1,
+            'indikasi' => $this->input->post('indikasi'),
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
             'harga_beli' => $harga_beli,
             'persentase_keuntungan' => $persentase,
             'harga_jual' => $harga_jual,
+            'margin_resep' => $margin_resep,
+            'harga_resep' => $harga_resep,
+            'margin_pelanggan' => $margin_pelanggan,
+            'harga_pelanggan' => $harga_pelanggan,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'expired_date' => $this->input->post('expired_date') ?: null,
@@ -348,6 +380,23 @@ class MasterProduk extends MY_Controller {
             return round($harga_beli, 0);
         }
         return round($harga_beli + ($harga_beli * $persentase / 100), 0);
+    }
+
+    /**
+     * Hitung harga resep / pelanggan.
+     * Jika harga diinput manual, pakai nilai tersebut; jika kosong, hitung dari margin.
+     */
+    private function hitung_harga_margin($harga_beli, $margin, $harga_manual = null) {
+        $harga_manual = floatval($harga_manual);
+        $harga_beli = floatval($harga_beli);
+        $margin = floatval($margin);
+        if ($harga_manual > 0) {
+            return round($harga_manual, 0);
+        }
+        if ($harga_beli <= 0 || $margin <= 0) {
+            return round($harga_beli, 0);
+        }
+        return round($harga_beli + ($harga_beli * $margin / 100), 0);
     }
 
     /**
@@ -451,18 +500,31 @@ class MasterProduk extends MY_Controller {
             $persentase = 0;
         }
         $harga_jual = $this->hitung_harga_jual($harga_beli, $persentase);
+        $margin_resep = floatval($this->input->post('margin_resep')) ?: 0;
+        $harga_resep = $this->hitung_harga_margin($harga_beli, $margin_resep, $this->input->post('harga_resep'));
+        $margin_pelanggan = floatval($this->input->post('margin_pelanggan')) ?: 0;
+        $harga_pelanggan = $this->hitung_harga_margin($harga_beli, $margin_pelanggan, $this->input->post('harga_pelanggan'));
         $data = array(
             'kode' => $this->input->post('kode'),
             'barcode' => $barcode,
             'nama' => $this->input->post('nama'),
+            'pabrik' => $this->input->post('pabrik'),
             'kategori_id' => $this->input->post('kategori_id') ?: null,
+            'golongan_id' => $this->input->post('golongan_id') ?: null,
             'satuan_id' => $this->input->post('satuan_id') ?: null,
+            'satuan_beli_id' => $this->input->post('satuan_beli_id') ?: null,
+            'satuan_konversi' => intval($this->input->post('satuan_konversi')) ?: 1,
+            'indikasi' => $this->input->post('indikasi'),
             'rak_id' => $this->input->post('rak_id') ?: null,
             'gudang_id' => $this->input->post('gudang_id') ?: null,
             'pajak_id' => $this->input->post('pajak_id') ?: null,
             'harga_beli' => $harga_beli,
             'persentase_keuntungan' => $persentase,
             'harga_jual' => $harga_jual,
+            'margin_resep' => $margin_resep,
+            'harga_resep' => $harga_resep,
+            'margin_pelanggan' => $margin_pelanggan,
+            'harga_pelanggan' => $harga_pelanggan,
             'stok_minimal' => $this->input->post('stok_minimal') ?: 0,
             'stok_maksimal' => $this->input->post('stok_maksimal') ?: 0,
             'stok_awal' => $this->input->post('stok_awal') ?: 0,

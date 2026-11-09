@@ -5,7 +5,15 @@ class Master_produk_model extends MY_Model {
     
     protected $table = 'master_produk';
     protected $primary_key = 'id';
-    protected $fillable = array('kode', 'barcode', 'nama', 'kategori_id', 'satuan_id', 'rak_id', 'gudang_id', 'pajak_id', 'harga_beli', 'persentase_keuntungan', 'harga_jual', 'stok_minimal', 'stok_maksimal', 'stok_awal', 'stok_akhir', 'expired_date', 'gambar', 'deskripsi', 'is_resep', 'is_active');
+    protected $fillable = array(
+        'kode', 'barcode', 'nama', 'pabrik', 'kategori_id', 'golongan_id',
+        'satuan_id', 'satuan_beli_id', 'satuan_konversi', 'indikasi',
+        'rak_id', 'gudang_id', 'pajak_id',
+        'harga_beli', 'persentase_keuntungan', 'harga_jual',
+        'margin_resep', 'harga_resep', 'margin_pelanggan', 'harga_pelanggan',
+        'stok_minimal', 'stok_maksimal', 'stok_awal', 'stok_akhir',
+        'expired_date', 'gambar', 'deskripsi', 'is_resep', 'is_active'
+    );
     protected $timestamps = true;
     
     public function __construct() {
@@ -16,10 +24,12 @@ class Master_produk_model extends MY_Model {
      * Get all with joins
      */
     public function get_all_with_relations($where = array(), $order_by = null, $limit = null, $offset = null) {
-        $this->db->select('mp.*, mk.nama as kategori_nama, ms.nama as satuan_nama, mr.nama as rak_nama, mg.nama as gudang_nama, mpaj.nama as pajak_nama');
+        $this->db->select('mp.*, mk.nama as kategori_nama, mgol.nama as golongan_nama, ms.nama as satuan_nama, msb.nama as satuan_beli_nama, mr.nama as rak_nama, mg.nama as gudang_nama, mpaj.nama as pajak_nama');
         $this->db->from($this->table . ' mp');
         $this->db->join('master_kategori mk', 'mk.id = mp.kategori_id', 'left');
+        $this->db->join('master_golongan mgol', 'mgol.id = mp.golongan_id', 'left');
         $this->db->join('master_satuan ms', 'ms.id = mp.satuan_id', 'left');
+        $this->db->join('master_satuan msb', 'msb.id = mp.satuan_beli_id', 'left');
         $this->db->join('master_rak mr', 'mr.id = mp.rak_id', 'left');
         $this->db->join('master_gudang mg', 'mg.id = mp.gudang_id', 'left');
         $this->db->join('master_pajak mpaj', 'mpaj.id = mp.pajak_id', 'left');
@@ -43,10 +53,12 @@ class Master_produk_model extends MY_Model {
      * Get by ID with relations
      */
     public function get_by_id_with_relations($id) {
-        $this->db->select('mp.*, mk.nama as kategori_nama, ms.nama as satuan_nama, mr.nama as rak_nama, mg.nama as gudang_nama, mpaj.nama as pajak_nama');
+        $this->db->select('mp.*, mk.nama as kategori_nama, mgol.nama as golongan_nama, ms.nama as satuan_nama, msb.nama as satuan_beli_nama, mr.nama as rak_nama, mg.nama as gudang_nama, mpaj.nama as pajak_nama');
         $this->db->from($this->table . ' mp');
         $this->db->join('master_kategori mk', 'mk.id = mp.kategori_id', 'left');
+        $this->db->join('master_golongan mgol', 'mgol.id = mp.golongan_id', 'left');
         $this->db->join('master_satuan ms', 'ms.id = mp.satuan_id', 'left');
+        $this->db->join('master_satuan msb', 'msb.id = mp.satuan_beli_id', 'left');
         $this->db->join('master_rak mr', 'mr.id = mp.rak_id', 'left');
         $this->db->join('master_gudang mg', 'mg.id = mp.gudang_id', 'left');
         $this->db->join('master_pajak mpaj', 'mpaj.id = mp.pajak_id', 'left');

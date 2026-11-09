@@ -36,6 +36,21 @@
             </div>
             
             <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="pabrik" class="form-label">Pabrik</label>
+                        <?= form_input(['name' => 'pabrik', 'id' => 'pabrik', 'class' => 'form-control', 'value' => set_value('pabrik')]) ?>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="golongan_id" class="form-label">Golongan</label>
+                        <?= form_dropdown('golongan_id', ['' => 'Pilih Golongan'] + rows_to_dropdown($golongs), set_value('golongan_id'), ['class' => 'form-select', 'id' => 'golongan_id']) ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="kategori_id" class="form-label">Kategori</label>
@@ -44,10 +59,29 @@
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
-                        <label for="satuan_id" class="form-label">Satuan</label>
+                        <label for="satuan_id" class="form-label">Satuan Jual Terkecil</label>
                         <?= form_dropdown('satuan_id', ['' => 'Pilih Satuan'] + rows_to_dropdown($satuans), set_value('satuan_id'), ['class' => 'form-select', 'id' => 'satuan_id']) ?>
                     </div>
                 </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="satuan_beli_id" class="form-label">Satuan Pembelian</label>
+                        <?= form_dropdown('satuan_beli_id', ['' => 'Pilih Satuan'] + rows_to_dropdown($satuans), set_value('satuan_beli_id'), ['class' => 'form-select', 'id' => 'satuan_beli_id']) ?>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="satuan_konversi" class="form-label">Konversi Satuan</label>
+                        <div class="input-group">
+                            <?= form_input(['type' => 'number', 'min' => '1', 'name' => 'satuan_konversi', 'id' => 'satuan_konversi', 'class' => 'form-control', 'value' => set_value('satuan_konversi', 1)]) ?>
+                            <span class="input-group-text" id="konversiInfo">/ kemasan</span>
+                        </div>
+                        <div class="form-text">Isi satuan jual terkecil dalam 1 satuan pembelian.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="rak_id" class="form-label">Rak</label>
@@ -60,35 +94,94 @@
                         <?= form_dropdown('gudang_id', ['' => 'Pilih Gudang'] + rows_to_dropdown($gudangs), set_value('gudang_id'), ['class' => 'form-select', 'id' => 'gudang_id']) ?>
                     </div>
                 </div>
-            </div>
-            
-            <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="pajak_id" class="form-label">Pajak</label>
                         <?= form_dropdown('pajak_id', ['' => 'Pilih Pajak'] + rows_to_dropdown($pajaks), set_value('pajak_id'), ['class' => 'form-select', 'id' => 'pajak_id']) ?>
                     </div>
                 </div>
-                <div class="col-md-3">
+            </div>
+
+            <div class="mb-3">
+                <label for="indikasi" class="form-label">Indikasi</label>
+                <?= form_textarea(['name' => 'indikasi', 'id' => 'indikasi', 'class' => 'form-control', 'rows' => 2, 'value' => set_value('indikasi')]) ?>
+            </div>
+
+            <hr>
+            <h6 class="mb-3">Harga &amp; Margin</h6>
+
+            <div class="row">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="harga_beli" class="form-label">Harga Beli</label>
+                        <label for="harga_beli_kemasan" class="form-label">Harga Beli per <span class="label-sat-beli">Kemasan</span></label>
+                        <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'harga_beli_kemasan', 'id' => 'harga_beli_kemasan', 'class' => 'form-control']) ?>
+                        <div class="form-text">Opsional, otomatis dibagi konversi.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="harga_beli" class="form-label">Harga Beli per <span class="label-sat-jual">Satuan</span></label>
                         <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'harga_beli', 'id' => 'harga_beli', 'class' => 'form-control', 'value' => set_value('harga_beli', 0)]) ?>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="persentase_keuntungan" class="form-label">% Keuntungan</label>
+                        <label class="form-label">Total Beli per <span class="label-sat-beli">Kemasan</span></label>
+                        <div class="form-control-plaintext fw-bold" id="hargaBeliInfo">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="harga_jual" class="form-label">Harga Non-Resep</label>
+                        <?= form_input(['type' => 'number', 'step' => '1', 'min' => '0', 'name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control', 'value' => set_value('harga_jual', 0)]) ?>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="persentase_keuntungan" class="form-label">Margin Non-Resep</label>
                         <div class="input-group">
                             <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'persentase_keuntungan', 'id' => 'persentase_keuntungan', 'class' => 'form-control', 'value' => set_value('persentase_keuntungan', 0)]) ?>
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="harga_jual" class="form-label">Harga Jual</label>
-                        <?= form_input(['type' => 'number', 'step' => '1', 'min' => '0', 'name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control', 'value' => set_value('harga_jual', 0), 'readonly' => true]) ?>
-                        <div class="form-text">Otomatis: Harga Beli + % Keuntungan (dibulatkan)</div>
+                        <label for="harga_resep" class="form-label">Harga Resep</label>
+                        <?= form_input(['type' => 'number', 'step' => '1', 'min' => '0', 'name' => 'harga_resep', 'id' => 'harga_resep', 'class' => 'form-control', 'value' => set_value('harga_resep', 0)]) ?>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="margin_resep" class="form-label">Margin Resep</label>
+                        <div class="input-group">
+                            <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'margin_resep', 'id' => 'margin_resep', 'class' => 'form-control', 'value' => set_value('margin_resep', 0)]) ?>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="harga_pelanggan" class="form-label">Harga Pelanggan</label>
+                        <?= form_input(['type' => 'number', 'step' => '1', 'min' => '0', 'name' => 'harga_pelanggan', 'id' => 'harga_pelanggan', 'class' => 'form-control', 'value' => set_value('harga_pelanggan', 0)]) ?>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="margin_pelanggan" class="form-label">Margin Pelanggan</label>
+                        <div class="input-group">
+                            <?= form_input(['type' => 'number', 'step' => '0.01', 'min' => '0', 'name' => 'margin_pelanggan', 'id' => 'margin_pelanggan', 'class' => 'form-control', 'value' => set_value('margin_pelanggan', 0)]) ?>
+                            <span class="input-group-text">%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -167,17 +260,79 @@ function loadRakByGudang(gudangId, selectedRakId) {
 }
 
 $(document).ready(function() {
-    // Auto hitung harga jual dari harga beli + persentase keuntungan
-    function hitungHargaJual() {
-        var beli = parseFloat($('#harga_beli').val()) || 0;
-        var persen = parseFloat($('#persentase_keuntungan').val()) || 0;
-        var jual = beli + (beli * persen / 100);
-        jual = Math.round(jual);
-        $('#harga_jual').val(jual);
+    function angka(sel) {
+        return parseFloat($(sel).val()) || 0;
+    }
+    function konversi() {
+        var k = angka('#satuan_konversi');
+        return k > 0 ? k : 1;
     }
 
-    $('#harga_beli, #persentase_keuntungan').on('input change', hitungHargaJual);
-    hitungHargaJual();
+    function updateHargaBeliInfo() {
+        var total = angka('#harga_beli') * konversi();
+        $('#hargaBeliInfo').text(total > 0 ? 'Rp ' + total.toLocaleString('id-ID') : '-');
+    }
+
+    function updateLabelSatuan() {
+        var jual = $('#satuan_id option:selected').text();
+        var beli = $('#satuan_beli_id option:selected').text();
+        $('.label-sat-jual').text($('#satuan_id').val() ? jual : 'Satuan');
+        $('.label-sat-beli').text($('#satuan_beli_id').val() ? beli : 'Kemasan');
+        $('#konversiInfo').text('/ ' + ($('#satuan_id').val() ? jual : 'satuan'));
+        updateHargaBeliInfo();
+    }
+
+    // Sinkronisasi dua arah harga <-> margin (dasar: harga beli per satuan terkecil)
+    function bindHargaMargin(hargaSel, marginSel) {
+        $(marginSel).on('input change', function() {
+            var beli = angka('#harga_beli');
+            var m = angka(marginSel);
+            if (beli > 0) {
+                $(hargaSel).val(Math.round(beli + (beli * m / 100)));
+            }
+        });
+        $(hargaSel).on('input change', function() {
+            var beli = angka('#harga_beli');
+            var harga = angka(hargaSel);
+            if (beli > 0 && harga > 0) {
+                $(marginSel).val(Math.round(((harga - beli) / beli) * 10000) / 100);
+            }
+        });
+    }
+
+    var pasanganHarga = [
+        ['#harga_jual', '#persentase_keuntungan'],
+        ['#harga_resep', '#margin_resep'],
+        ['#harga_pelanggan', '#margin_pelanggan']
+    ];
+    $.each(pasanganHarga, function(i, pair) {
+        bindHargaMargin(pair[0], pair[1]);
+    });
+
+    // Harga beli berubah -> hitung ulang semua harga jual dari margin
+    $('#harga_beli').on('input change', function() {
+        var beli = angka('#harga_beli');
+        if (beli > 0) {
+            $.each(pasanganHarga, function(i, pair) {
+                var m = angka(pair[1]);
+                if (m > 0) {
+                    $(pair[0]).val(Math.round(beli + (beli * m / 100)));
+                }
+            });
+        }
+        updateHargaBeliInfo();
+    });
+
+    // Harga beli per kemasan -> harga beli per satuan terkecil
+    $('#harga_beli_kemasan').on('input change', function() {
+        var kemasan = angka('#harga_beli_kemasan');
+        if (kemasan > 0) {
+            $('#harga_beli').val(Math.round((kemasan / konversi()) * 100) / 100).trigger('change');
+        }
+    });
+
+    $('#satuan_id, #satuan_beli_id, #satuan_konversi').on('input change', updateLabelSatuan);
+    updateLabelSatuan();
 
     $('#gudang_id').on('change', function() {
         loadRakByGudang($(this).val(), '');

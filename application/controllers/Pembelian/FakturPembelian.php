@@ -10,6 +10,11 @@ class FakturPembelian extends MY_Controller {
         $this->load->model('pesanan_pembelian_model');
         $this->load->model('supplier_model');
         $this->load->model('master_produk_model');
+        $this->load->model('master_satuan_model');
+        $this->load->model('master_kategori_model');
+        $this->load->model('master_golongan_model');
+        $this->load->model('master_pajak_model');
+        $this->load->model('metode_pembayaran_model');
         $this->check_permission('pembelian', 'view');
     }
     
@@ -22,7 +27,12 @@ class FakturPembelian extends MY_Controller {
             ),
             'suppliers' => $this->supplier_model->get_all(array('is_active' => 1)),
             'pos' => $this->pesanan_pembelian_model->get_all("status IN ('sent', 'received')"),
-            'produks' => $this->master_produk_model->get_all(array('is_active' => 1))
+            'produks' => $this->master_produk_model->get_all(array('is_active' => 1)),
+            'metode_pembayarans' => $this->metode_pembayaran_model->get_all(array('is_active' => 1)),
+            'satuans' => $this->master_satuan_model->get_all(array('is_active' => 1)),
+            'kategoris' => $this->master_kategori_model->get_all(array('is_active' => 1)),
+            'golongs' => $this->master_golongan_model->get_all(array('is_active' => 1)),
+            'pajaks' => $this->master_pajak_model->get_all(array('is_active' => 1))
         );
         
         $this->render('pembelian/faktur_pembelian/index', $data);
@@ -102,6 +112,7 @@ class FakturPembelian extends MY_Controller {
             'no_faktur' => $id ? $this->input->post('no_faktur') : $this->faktur_pembelian_model->generate_no_faktur(),
             'po_id' => $this->input->post('po_id') ?: null,
             'supplier_id' => $this->input->post('supplier_id'),
+            'jenis_pembayaran_id' => $this->input->post('jenis_pembayaran_id') ?: null,
             'tanggal' => $this->input->post('tanggal') ?: date('Y-m-d'),
             'jatuh_tempo' => $this->input->post('jatuh_tempo') ?: null,
             'subtotal' => $subtotal,
@@ -126,7 +137,10 @@ class FakturPembelian extends MY_Controller {
             $detail_data = array(
                 'faktur_id' => $id,
                 'produk_id' => $item['produk_id'],
+                'satuan_beli_id' => !empty($item['satuan_beli_id']) ? $item['satuan_beli_id'] : null,
                 'qty' => $item['qty'],
+                'no_batch' => !empty($item['no_batch']) ? $item['no_batch'] : null,
+                'expired_date' => !empty($item['expired_date']) ? $item['expired_date'] : null,
                 'harga' => $item['harga'],
                 'diskon' => isset($item['diskon']) ? $item['diskon'] : 0,
                 'subtotal' => ($item['qty'] * $item['harga']) - (isset($item['diskon']) ? $item['diskon'] : 0)
@@ -135,22 +149,27 @@ class FakturPembelian extends MY_Controller {
             
             // Sync stock if no PO
             if (empty($data['po_id']) && !$this->input->post('id')) { // only add stock on insert, not update (simplification)
+                $produk = $this->master_produk_model->get_by_id($item['produk_id']);
+                $konversi = ($produk && (int) $produk->satuan_konversi > 0) ? (int) $produk->satuan_konversi : 1;
+                $qty_terkecil = (float) $item['qty'] * $konversi;
+                $harga_terkecil = $konversi > 0 ? ((float) $item['harga'] / $konversi) : (float) $item['harga'];
+
                 $kartu_data = array(
                     'produk_id' => $item['produk_id'],
                     'gudang_id' => 1, // Default gudang
                     'tanggal' => date('Y-m-d'),
                     'referensi' => $data['no_faktur'],
                     'tipe' => 'masuk',
-                    'qty_masuk' => $item['qty'],
+                    'qty_masuk' => $qty_terkecil,
                     'qty_keluar' => 0,
-                    'harga' => $item['harga'],
+                    'harga' => $harga_terkecil,
                     'keterangan' => 'Faktur Pembelian: ' . $data['no_faktur']
                 );
                 $this->kartu_stok_model->insert_kartu_stok($kartu_data);
                 
-                // Update harga beli
+                // Update harga beli (per satuan jual terkecil)
                 $this->db->where('id', $item['produk_id']);
-                $this->db->update('master_produk', array('harga_beli' => $item['harga']));
+                $this->db->update('master_produk', array('harga_beli' => round($harga_terkecil, 2)));
             }
         }
         
@@ -163,6 +182,74 @@ class FakturPembelian extends MY_Controller {
         }
     }
     
+    /**
+     * Tambah obat/produk baru langsung dari form faktur pembelian
+     */
+    public function ajax_add_produk() {
+        $this->check_permission('pembelian', 'create');
+
+        $this->form_validation->set_rules('kode', 'Kode Obat', 'required|trim');
+        $this->form_validation->set_rules('nama', 'Nama Obat', 'required|trim');
+
+        if ($this->form_validation->run() == false) {
+            $this->ajax_response(false, 'Validasi gagal', null, $this->form_validation->error_array());
+            return;
+        }
+
+        $kode = $this->input->post('kode');
+        if ($this->master_produk_model->kode_exists($kode)) {
+            $this->ajax_response(false, 'Kode obat sudah digunakan');
+            return;
+        }
+
+        $harga_beli = floatval($this->input->post('harga_beli')) ?: 0;
+        $persentase = floatval($this->input->post('persentase_keuntungan')) ?: 0;
+        $margin_resep = $this->input->post('margin_resep') !== null && $this->input->post('margin_resep') !== ''
+            ? floatval($this->input->post('margin_resep')) : $persentase;
+        $margin_pelanggan = $this->input->post('margin_pelanggan') !== null && $this->input->post('margin_pelanggan') !== ''
+            ? floatval($this->input->post('margin_pelanggan')) : $persentase;
+
+        $data = array(
+            'kode' => $kode,
+            'nama' => $this->input->post('nama'),
+            'pabrik' => $this->input->post('pabrik'),
+            'kategori_id' => $this->input->post('kategori_id') ?: null,
+            'golongan_id' => $this->input->post('golongan_id') ?: null,
+            'satuan_id' => $this->input->post('satuan_id') ?: null,
+            'satuan_beli_id' => $this->input->post('satuan_beli_id') ?: null,
+            'satuan_konversi' => intval($this->input->post('satuan_konversi')) ?: 1,
+            'indikasi' => $this->input->post('indikasi'),
+            'pajak_id' => $this->input->post('pajak_id') ?: null,
+            'harga_beli' => $harga_beli,
+            'persentase_keuntungan' => $persentase,
+            'harga_jual' => round($harga_beli + ($harga_beli * $persentase / 100), 0),
+            'margin_resep' => $margin_resep,
+            'harga_resep' => round($harga_beli + ($harga_beli * $margin_resep / 100), 0),
+            'margin_pelanggan' => $margin_pelanggan,
+            'harga_pelanggan' => round($harga_beli + ($harga_beli * $margin_pelanggan / 100), 0),
+            'stok_minimal' => 0,
+            'stok_maksimal' => 0,
+            'stok_awal' => 0,
+            'stok_akhir' => 0,
+            'is_active' => 1
+        );
+
+        $insert_id = $this->master_produk_model->insert($data);
+        if (!$insert_id) {
+            $this->ajax_response(false, 'Gagal menambahkan obat baru');
+            return;
+        }
+
+        $this->ajax_response(true, 'Obat baru berhasil ditambahkan', array(
+            'id' => (int) $insert_id,
+            'kode' => $data['kode'],
+            'nama' => $data['nama'],
+            'harga_beli' => (float) $data['harga_beli'],
+            'satuan_beli_id' => $data['satuan_beli_id'],
+            'satuan_konversi' => (int) $data['satuan_konversi']
+        ));
+    }
+
     public function ajax_get($id) {
         $this->check_permission('pembelian', 'view');
         $faktur = $this->faktur_pembelian_model->get_by_id_with_relations($id);

@@ -5,7 +5,7 @@ class Faktur_pembelian_detail_model extends MY_Model {
     
     protected $table = 'faktur_pembelian_detail';
     protected $primary_key = 'id';
-    protected $fillable = array('faktur_id', 'produk_id', 'qty', 'harga', 'diskon', 'subtotal');
+    protected $fillable = array('faktur_id', 'produk_id', 'satuan_beli_id', 'qty', 'no_batch', 'expired_date', 'harga', 'diskon', 'subtotal');
     protected $timestamps = false;
     
     public function __construct() {
