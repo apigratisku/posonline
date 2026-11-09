@@ -89,8 +89,13 @@ $(document).ready(function() {
     });
 });
 
+var isAdminProduk = <?php echo !empty($is_admin) ? 'true' : 'false'; ?>;
+
 function deleteData(id) {
-    showConfirm('Apakah Anda yakin ingin menghapus data ini?', function() {
+    var pesan = isAdminProduk
+        ? 'PERINGATAN: Anda login sebagai Admin. Menghapus produk ini akan MENGHAPUS PERMANEN semua data terkait (kartu stok, penjualan, pembelian, mutasi, stok opname, retur, dan riwayat lain). Lanjutkan?'
+        : 'Apakah Anda yakin ingin menghapus data ini?';
+    showConfirm(pesan, function() {
         showLoading();
         $.ajax({
             url: baseUrl + 'masterdata/masterproduk/ajax_delete/' + id,

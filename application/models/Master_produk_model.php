@@ -170,6 +170,36 @@ class Master_produk_model extends MY_Model {
     }
 
     /**
+     * Cek apakah tabel ada di database (aman kalau tabel belum dibuat)
+     */
+    private function table_exists($table) {
+        return $this->db->table_exists($table);
+    }
+
+    /**
+     * Hapus produk beserta seluruh data yang mereferensikan produk_id.
+     * Dijalankan dalam satu transaksi agar tidak ada data setengah terhapus.
+     * Hanya untuk role Admin.
+     */
+    public function delete_with_relations($id) {
+        $this->db->trans_start();
+
+        // Hapus dulu baris turunan (semua tabel berkolom produk_id)
+        foreach ($this->reference_tables as $tbl) {
+            if ($this->table_exists($tbl)) {
+                $this->db->where('produk_id', $id)->delete($tbl);
+            }
+        }
+
+        // Baru hapus produknya
+        $this->db->where('id', $id)->delete($this->table);
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    /**
      * DataTables with relations
      */
     public function datatable($params = array()) {

@@ -20,8 +20,10 @@ class MasterProduk extends MY_Controller {
      * Index - List page
      */
     public function index() {
+        $peran_kode = $this->peran ? $this->peran->kode : $this->session->userdata('peran_kode');
         $data = array(
             'title' => 'Master Produk',
+            'is_admin' => strtolower(trim((string) $peran_kode)) === 'admin',
             'breadcrumb' => array(
                 array('label' => 'Master Data', 'url' => '#'),
                 array('label' => 'Master Produk')
@@ -580,14 +582,20 @@ class MasterProduk extends MY_Controller {
             return;
         }
 
-        // Blokir hapus jika produk masih direferensikan transaksi
-        if ($this->master_produk_model->is_in_use($id)) {
-            $this->ajax_response(false, 'Data tidak dapat dihapus karena masih digunakan pada transaksi. Nonaktifkan produk bila sudah tidak dijual.');
-            return;
+        $peran_kode = $this->peran ? $this->peran->kode : $this->session->userdata('peran_kode');
+        $is_admin = strtolower(trim((string) $peran_kode)) === 'admin';
+
+        if (!$is_admin) {
+            // Non-admin: blokir hapus jika produk masih direferensikan transaksi
+            if ($this->master_produk_model->is_in_use($id)) {
+                $this->ajax_response(false, 'Data tidak dapat dihapus karena masih digunakan pada transaksi. Nonaktifkan produk bila sudah tidak dijual.');
+                return;
+            }
         }
 
-        if ($this->master_produk_model->delete($id)) {
-            $this->ajax_response(true, 'Data berhasil dihapus');
+        // Admin: hapus produk beserta seluruh data yang mereferensikan produk_id
+        if ($this->master_produk_model->delete_with_relations($id)) {
+            $this->ajax_response(true, 'Data berhasil dihapus beserta seluruh data terkait');
         } else {
             $this->ajax_response(false, 'Gagal menghapus data');
         }

@@ -40,6 +40,10 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="peran_id_permissions">
+                <div class="mb-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnCheckAll">Centang Semua</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnUncheckAll">Kosongkan Semua</button>
+                </div>
                 <div id="permissionsContainer"></div>
             </div>
             <div class="modal-footer">
@@ -105,18 +109,21 @@ $(document).ready(function() {
                     moduls.forEach(function(modul) {
                         var perm = permissions[modul.id] || {};
                         html += '<div class="col-md-6 mb-3">';
-                        html += '<div class="card">';
-                        html += '<div class="card-header"><strong>' + modul.nama + '</strong></div>';
-                        html += '<div class="card-body">';
-                        html += '<div class="form-check"><input class="form-check-input" type="checkbox" name="permissions[' + modul.id + '][view]" id="perm_' + modul.id + '_view" ' + (perm.view ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_view">Lihat</label></div>';
-                        html += '<div class="form-check"><input class="form-check-input" type="checkbox" name="permissions[' + modul.id + '][create]" id="perm_' + modul.id + '_create" ' + (perm.create ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_create">Tambah</label></div>';
-                        html += '<div class="form-check"><input class="form-check-input" type="checkbox" name="permissions[' + modul.id + '][update]" id="perm_' + modul.id + '_update" ' + (perm.update ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_update">Ubah</label></div>';
-                        html += '<div class="form-check"><input class="form-check-input" type="checkbox" name="permissions[' + modul.id + '][delete]" id="perm_' + modul.id + '_delete" ' + (perm.delete ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_delete">Hapus</label></div>';
+                        html += '<div class="card" data-modul-card="' + modul.id + '">';
+                        html += '<div class="card-header d-flex justify-content-between align-items-center"><strong>' + modul.nama + '</strong>';
+                        html += '<div class="form-check mb-0"><input class="form-check-input" type="checkbox" id="perm_all_' + modul.id + '" data-modul-id="' + modul.id + '"><label class="form-check-label small" for="perm_all_' + modul.id + '">Pilih Semua</label></div>';
+                        html += '</div>';
+                        html += '<div class="card-body" data-modul-body="' + modul.id + '">';
+                        html += '<div class="form-check"><input class="form-check-input perm-item" type="checkbox" name="permissions[' + modul.id + '][view]" id="perm_' + modul.id + '_view" data-modul-id="' + modul.id + '" ' + (perm.can_view ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_view">Lihat</label></div>';
+                        html += '<div class="form-check"><input class="form-check-input perm-item" type="checkbox" name="permissions[' + modul.id + '][create]" id="perm_' + modul.id + '_create" data-modul-id="' + modul.id + '" ' + (perm.can_create ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_create">Tambah</label></div>';
+                        html += '<div class="form-check"><input class="form-check-input perm-item" type="checkbox" name="permissions[' + modul.id + '][update]" id="perm_' + modul.id + '_update" data-modul-id="' + modul.id + '" ' + (perm.can_update ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_update">Ubah</label></div>';
+                        html += '<div class="form-check"><input class="form-check-input perm-item" type="checkbox" name="permissions[' + modul.id + '][delete]" id="perm_' + modul.id + '_delete" data-modul-id="' + modul.id + '" ' + (perm.can_delete ? 'checked' : '') + '><label class="form-check-label" for="perm_' + modul.id + '_delete">Hapus</label></div>';
                         html += '</div></div></div>';
                     });
                     
                     html += '</div>';
                     $('#permissionsContainer').html(html);
+                    syncCheckAllState();
                     
                     // Show modal using Bootstrap 5 API
                     var modalElement = document.getElementById('permissionsModal');
@@ -133,6 +140,45 @@ $(document).ready(function() {
         });
     };
     
+    // Sync "Pilih Semua" checkbox berdasarkan centang anak-anaknya
+    function syncModulCheckAll(modulId) {
+        var items = $('#permissionsContainer .perm-item[data-modul-id="' + modulId + '"]');
+        var checked = items.filter(':checked').length;
+        var all = $('#perm_all_' + modulId);
+        all.prop('checked', items.length > 0 && checked === items.length);
+        all.prop('indeterminate', checked > 0 && checked < items.length);
+    }
+
+    function syncCheckAllState() {
+        $('#permissionsContainer [id^="perm_all_"]').each(function() {
+            syncModulCheckAll($(this).data('modul-id'));
+        });
+    }
+
+    // Delegasi event: "Pilih Semua" per kategori modul
+    $('#permissionsContainer').on('change', '[id^="perm_all_"]', function() {
+        var modulId = $(this).data('modul-id');
+        var isChecked = $(this).is(':checked');
+        $('#permissionsContainer .perm-item[data-modul-id="' + modulId + '"]').prop('checked', isChecked);
+        syncModulCheckAll(modulId);
+    });
+
+    // Delegasi event: centang manual -> update induk
+    $('#permissionsContainer').on('change', '.perm-item', function() {
+        syncModulCheckAll($(this).data('modul-id'));
+    });
+
+    // Tombol global
+    $('#btnCheckAll').on('click', function() {
+        $('#permissionsContainer .perm-item').prop('checked', true);
+        $('#permissionsContainer [id^="perm_all_"]').prop({ checked: true, indeterminate: false });
+    });
+
+    $('#btnUncheckAll').on('click', function() {
+        $('#permissionsContainer .perm-item').prop('checked', false);
+        $('#permissionsContainer [id^="perm_all_"]').prop({ checked: false, indeterminate: false });
+    });
+
     window.savePermissions = function() {
         var peran_id = $('#peran_id_permissions').val();
         var permissions = {};

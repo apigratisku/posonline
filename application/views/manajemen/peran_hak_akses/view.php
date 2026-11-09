@@ -70,13 +70,24 @@
                                 break;
                             }
                         }
+                        $checks = array(
+                            'can_view' => 'Lihat',
+                            'can_create' => 'Tambah',
+                            'can_update' => 'Ubah',
+                            'can_delete' => 'Hapus'
+                        );
                         ?>
                         <tr>
                             <td><?= htmlspecialchars($modul->nama) ?></td>
-                            <td><?= $perm && $perm->can_view ? '<span class="badge bg-success">Ya</span>' : '<span class="badge bg-secondary">Tidak</span>' ?></td>
-                            <td><?= $perm && $perm->can_create ? '<span class="badge bg-success">Ya</span>' : '<span class="badge bg-secondary">Tidak</span>' ?></td>
-                            <td><?= $perm && $perm->can_update ? '<span class="badge bg-success">Ya</span>' : '<span class="badge bg-secondary">Tidak</span>' ?></td>
-                            <td><?= $perm && $perm->can_delete ? '<span class="badge bg-success">Ya</span>' : '<span class="badge bg-secondary">Tidak</span>' ?></td>
+                            <?php foreach ($checks as $key => $label): ?>
+                                <td class="text-center">
+                                    <?php if ($perm && $perm->$key): ?>
+                                        <i class="fas fa-check-circle text-success fa-lg" title="Boleh <?= $label ?>"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-times-circle text-muted" title="Tidak boleh <?= $label ?>"></i>
+                                    <?php endif; ?>
+                                </td>
+                            <?php endforeach; ?>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
