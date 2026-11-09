@@ -24,6 +24,14 @@ class Peran_hak_akses_model extends MY_Model {
     }
     
     /**
+     * Normalisasi nilai centang dari form/JS.
+     * JS mengirim 0 untuk checkbox yang tidak dicentang, jadi isset() tidak boleh dipakai.
+     */
+    private function flag($perms, $key) {
+        return !empty($perms[$key]) ? 1 : 0;
+    }
+
+    /**
      * Save permissions for a role
      */
     public function save_permissions($peran_id, $permissions) {
@@ -39,10 +47,10 @@ class Peran_hak_akses_model extends MY_Model {
                 $data = array(
                     'peran_id' => $peran_id,
                     'modul_id' => $modul_id,
-                    'can_view' => isset($perms['view']) ? 1 : 0,
-                    'can_create' => isset($perms['create']) ? 1 : 0,
-                    'can_update' => isset($perms['update']) ? 1 : 0,
-                    'can_delete' => isset($perms['delete']) ? 1 : 0
+                    'can_view' => $this->flag($perms, 'view'),
+                    'can_create' => $this->flag($perms, 'create'),
+                    'can_update' => $this->flag($perms, 'update'),
+                    'can_delete' => $this->flag($perms, 'delete')
                 );
                 $this->db->insert($this->table, $data);
             }

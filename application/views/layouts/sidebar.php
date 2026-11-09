@@ -41,6 +41,7 @@ $toko_logo = (isset($profil_toko) && !empty($profil_toko->logo) && is_file(FCPAT
                 <ul class="submenu">
                     <li><a href="<?= base_url('masterdata/masterproduk') ?>">Master Produk</a></li>
                     <li><a href="<?= base_url('masterdata/masterkategori') ?>">Master Kategori</a></li>
+                    <li><a href="<?= base_url('masterdata/mastergolongan') ?>">Master Golongan</a></li>
                     <li><a href="<?= base_url('masterdata/mastersatuan') ?>">Master Satuan</a></li>
                     <li><a href="<?= base_url('masterdata/masterrak') ?>">Master Rak</a></li>
                     <li><a href="<?= base_url('masterdata/mastergudang') ?>">Master Gudang</a></li>

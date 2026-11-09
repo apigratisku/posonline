@@ -70,6 +70,19 @@ $route['masterdata/masterkategori/ajax_save'] = 'MasterData/MasterKategori/ajax_
 $route['masterdata/masterkategori/ajax_delete/(:num)'] = 'MasterData/MasterKategori/ajax_delete/$1';
 $route['masterdata/masterkategori/ajax_search'] = 'MasterData/MasterKategori/ajax_search';
 
+// Master Golongan Routes
+$route['masterdata/mastergolongan'] = 'MasterData/MasterGolongan/index';
+$route['masterdata/mastergolongan/create'] = 'MasterData/MasterGolongan/create';
+$route['masterdata/mastergolongan/store'] = 'MasterData/MasterGolongan/store';
+$route['masterdata/mastergolongan/edit/(:num)'] = 'MasterData/MasterGolongan/edit/$1';
+$route['masterdata/mastergolongan/update/(:num)'] = 'MasterData/MasterGolongan/update/$1';
+$route['masterdata/mastergolongan/view/(:num)'] = 'MasterData/MasterGolongan/view/$1';
+$route['masterdata/mastergolongan/ajax_list'] = 'MasterData/MasterGolongan/ajax_list';
+$route['masterdata/mastergolongan/ajax_get/(:num)'] = 'MasterData/MasterGolongan/ajax_get/$1';
+$route['masterdata/mastergolongan/ajax_save'] = 'MasterData/MasterGolongan/ajax_save';
+$route['masterdata/mastergolongan/ajax_delete/(:num)'] = 'MasterData/MasterGolongan/ajax_delete/$1';
+$route['masterdata/mastergolongan/ajax_search'] = 'MasterData/MasterGolongan/ajax_search';
+
 // Master Produk Routes
 $route['masterdata/masterproduk'] = 'MasterData/MasterProduk/index';
 $route['masterdata/masterproduk/create'] = 'MasterData/MasterProduk/create';
