@@ -62,7 +62,8 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
     </div>
 </div>
 
-<!-- Toolbar aksi massal -->
+<!-- Toolbar aksi massal (admin only) -->
+<?php if (!empty($is_admin)) { ?>
 <div class="card mt-2 d-none" id="bulkActionBar">
     <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
         <span class="fw-semibold"><span id="bulkSelectedCount">0</span> transaksi dipilih</span>
@@ -74,6 +75,7 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
         </button>
     </div>
 </div>
+<?php } ?>
 
 <!-- Modal alasan pembatalan -->
 <div class="modal fade" id="cancelReasonModal" tabindex="-1" aria-hidden="true">
@@ -104,27 +106,72 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
     </div>
 </div>
 
+<!-- Modal detail penjualan -->
+<div class="modal fade" id="detailPenjualanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Detail Penjualan <span id="detailNoPenjualan" class="text-muted fw-normal"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3" id="detailHeaderInfo"></div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Produk</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Harga</th>
+                                <th class="text-end">Diskon</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailItemsBody"></tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <table class="table table-sm table-borderless w-auto mb-0" id="detailSummaryTable"></table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" id="btnPrintDetail">
+                    <i class="fas fa-print"></i> Cetak
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function() {
+    var isAdminCancel = $('#isAdminCancel').val() === '1';
+    var checkboxCol = [];
+    if (isAdminCancel) {
+        checkboxCol.push({
+            // Kolom checkbox: data = id penjualan (kolom terkirim terakhir dari server)
+            data: 7,
+            orderable: false,
+            searchable: false,
+            className: 'text-center',
+            render: function(data, type, row) {
+                if (String(row[5]).indexOf('CANCELLED') > -1) {
+                    return '<input type="checkbox" class="row-check" disabled title="Sudah dibatalkan">';
+                }
+                return '<input type="checkbox" class="row-check" value="' + data + '">';
+            }
+        });
+    }
+
     var table = initDataTable('penjualanTable', {
         ajax: {
             url: baseUrl + 'penjualan/daftar-penjualan/ajax_list',
             type: 'POST'
         },
-        columns: [
-            {
-                // Kolom checkbox: data = id penjualan (kolom terkirim terakhir dari server)
-                data: 7,
-                orderable: false,
-                searchable: false,
-                className: 'text-center',
-                render: function(data, type, row) {
-                    if (String(row[5]).indexOf('CANCELLED') > -1) {
-                        return '<input type="checkbox" class="row-check" disabled title="Sudah dibatalkan">';
-                    }
-                    return '<input type="checkbox" class="row-check" value="' + data + '">';
-                }
-            },
+        columns: checkboxCol.concat([
             { data: 0 },
             { data: 1 },
             { data: 2 },
@@ -133,7 +180,7 @@ $(document).ready(function() {
             { data: 5 },
             { data: 6, orderable: false, searchable: false },
             { data: 7, visible: false, searchable: false }
-        ],
+        ]),
         drawCallback: function() {
             // Setiap kali DataTables render ulang (pindah halaman / cari / reload)
             refreshBulkBar();
@@ -162,8 +209,13 @@ function refreshBulkBar() {
     var total = $('#penjualanTable tbody .row-check').length;
     var checked = $('#penjualanTable tbody .row-check:checked').length;
     $('#bulkSelectedCount').text(checked);
-    $('#bulkActionBar').toggleClass('d-none', checked === 0);
-    $('#checkAllPenjualan').prop('checked', total > 0 && checked === total);
+    // Non-admin: toolbar tidak dirender sama sekali
+    if ($('#bulkActionBar').length) {
+        $('#bulkActionBar').toggleClass('d-none', checked === 0);
+    }
+    if ($('#checkAllPenjualan').length) {
+        $('#checkAllPenjualan').prop('checked', total > 0 && checked === total);
+    }
 }
 
 function clearBulkSelection() {
@@ -254,18 +306,113 @@ function viewData(id) {
         dataType: 'json',
         success: function(response) {
             hideLoading();
-            if (response.status) {
-                // Show detail modal
-                showNotification('info', 'Detail penjualan: ' + response.data.penjualan.no_penjualan);
+            if (response.status && response.data) {
+                renderDetailPenjualan(response.data);
             } else {
-                showNotification('error', response.message);
+                showNotification('error', response.message || 'Detail penjualan tidak ditemukan');
             }
         },
-        error: function() {
+        error: function(xhr) {
             hideLoading();
-            showNotification('error', 'Gagal memuat data');
+            showNotification('error', 'Gagal memuat data' + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
         }
     });
+}
+
+/** Escape teks sebelum dimasukkan ke HTML */
+function detailEsc(value) {
+    return $('<div>').text(value === null || value === undefined ? '' : value).html();
+}
+
+function detailMoney(value) {
+    var num = parseFloat(value);
+    return (isNaN(num) ? 0 : num).toLocaleString('id-ID');
+}
+
+function detailQty(value) {
+    var num = parseFloat(value);
+    if (isNaN(num)) num = 0;
+    return num.toLocaleString('id-ID', { maximumFractionDigits: 3 });
+}
+
+function detailDateTime(value) {
+    if (!value) return '-';
+    var d = new Date(String(value).replace(' ', 'T'));
+    if (isNaN(d.getTime())) return String(value);
+    var pad = function(n) { return n < 10 ? '0' + n : n; };
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() +
+        ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+/** Render isi modal detail penjualan */
+function renderDetailPenjualan(data) {
+    var p = data.penjualan || {};
+    var details = data.details || [];
+
+    $('#detailNoPenjualan').text(p.no_penjualan || '');
+
+    var status = String(p.status || '').toUpperCase();
+    var statusClass = p.status === 'completed' ? 'success' : (p.status === 'cancelled' ? 'danger' : 'warning');
+    var statusHtml = '<span class="badge bg-' + statusClass + '">' + detailEsc(status) + '</span>';
+
+    var info = [
+        ['Pelanggan', detailEsc(p.pelanggan_nama || 'Umum')],
+        ['Gudang', detailEsc(p.gudang_nama || '-')]
+    ];
+    if (p.tanggal) info.push(['Tanggal', detailEsc(detailDateTime(p.tanggal))]);
+    if (p.sales_nama) info.push(['Sales', detailEsc(p.sales_nama)]);
+    if (p.shift_nama) info.push(['Shift', detailEsc(p.shift_nama)]);
+    if (p.metode_pembayaran_nama) info.push(['Metode Pembayaran', detailEsc(p.metode_pembayaran_nama)]);
+    info.push(['Status', statusHtml]);
+    if (p.keterangan) info.push(['Keterangan', detailEsc(p.keterangan)]);
+
+    var headerHtml = '';
+    info.forEach(function(item) {
+        headerHtml += '<div class="col-sm-6">' +
+            '<small class="text-muted d-block">' + item[0] + '</small>' +
+            '<div class="fw-semibold">' + item[1] + '</div>' +
+            '</div>';
+    });
+    $('#detailHeaderInfo').html(headerHtml);
+
+    var rows = '';
+    if (!details.length) {
+        rows = '<tr><td colspan="5" class="text-center text-muted">Tidak ada item</td></tr>';
+    } else {
+        details.forEach(function(d) {
+            var satuan = d.satuan_nama ? ' ' + detailEsc(d.satuan_nama) : '';
+            var diskon = parseFloat(d.diskon || 0);
+            rows += '<tr>' +
+                '<td>' + (d.produk_kode ? '<span class="text-muted">' + detailEsc(d.produk_kode) + '</span> - ' : '') + detailEsc(d.produk_nama || '-') + '</td>' +
+                '<td class="text-end">' + detailQty(d.qty) + satuan + '</td>' +
+                '<td class="text-end">' + detailMoney(d.harga) + '</td>' +
+                '<td class="text-end">' + (diskon > 0 ? detailMoney(diskon) : '-') + '</td>' +
+                '<td class="text-end">' + detailMoney(d.subtotal) + '</td>' +
+                '</tr>';
+        });
+    }
+    $('#detailItemsBody').html(rows);
+
+    var summary = '';
+    var sumRow = function(label, value, bold) {
+        summary += '<tr' + (bold ? ' class="fw-bold"' : '') + '>' +
+            '<td class="text-end pe-3">' + label + '</td>' +
+            '<td class="text-end">' + value + '</td>' +
+            '</tr>';
+    };
+    sumRow('Subtotal', detailMoney(p.subtotal));
+    if (parseFloat(p.diskon || 0) > 0) sumRow('Diskon', '-' + detailMoney(p.diskon));
+    if (parseFloat(p.pajak || 0) > 0) sumRow('Pajak', detailMoney(p.pajak));
+    sumRow('Total', detailMoney(p.total), true);
+    sumRow('Bayar', detailMoney(p.bayar));
+    sumRow('Kembalian', detailMoney(p.kembalian));
+    $('#detailSummaryTable').html(summary);
+
+    $('#btnPrintDetail').off('click').on('click', function() {
+        printData(p.id);
+    });
+
+    $('#detailPenjualanModal').modal('show');
 }
 
 function printData(id) {
