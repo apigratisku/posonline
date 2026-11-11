@@ -242,10 +242,16 @@ class Penjualan_model extends MY_Model {
             $params['default_order'] = 'p.tanggal';
         }
         $params['build_query'] = function () {
-            $this->db->select('p.*, pl.nama as pelanggan_nama, mg.nama as gudang_nama');
+            // Satu baris = satu item produk dalam transaksi
+            $this->db->select('p.id, p.no_penjualan, p.tanggal, p.status, p.total,
+                mp.kode as produk_kode, mp.nama as produk_nama,
+                pd.qty, pd.harga, pd.diskon, pd.subtotal,
+                pl.nama as pelanggan_nama, mg.nama as gudang_nama');
             $this->db->from($this->table . ' p');
+            $this->db->join('penjualan_detail pd', 'pd.penjualan_id = p.id', 'inner');
+            $this->db->join('master_produk mp', 'mp.id = pd.produk_id', 'left');
             $this->db->join('pelanggan pl', 'pl.id = p.pelanggan_id', 'left');
-            $this->db->join('master_gudang mg', 'mg.id = p.gudang_id');
+            $this->db->join('master_gudang mg', 'mg.id = p.gudang_id', 'left');
         };
         return $this->datatable_execute($params);
     }

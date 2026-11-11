@@ -29,8 +29,8 @@ class DaftarPenjualan extends MY_Controller {
         $this->check_permission('penjualan', 'view');
         
         $params = array(
-            'columns' => array('p.no_penjualan', 'p.tanggal', 'p.total', 'p.status'),
-            'search_fields' => array('p.no_penjualan', 'pl.nama', 'mg.nama')
+            'columns' => array('p.no_penjualan', 'mp.kode', 'mp.nama', 'p.tanggal', 'pd.subtotal', 'p.status'),
+            'search_fields' => array('p.no_penjualan', 'mp.kode', 'mp.nama')
         );
         
         $result = $this->penjualan_model->datatable($params);
@@ -38,12 +38,17 @@ class DaftarPenjualan extends MY_Controller {
         $data = array();
         foreach ($result['data'] as $row) {
             $status_badge = '<span class="badge bg-' . ($row->status == 'completed' ? 'success' : ($row->status == 'cancelled' ? 'danger' : 'warning')) . '">' . strtoupper($row->status) . '</span>';
+            $produk_nama = $row->produk_nama;
+            if ($row->produk_kode) {
+                $produk_nama = '<span class="text-muted">' . htmlspecialchars($row->produk_kode) . '</span> - ' . htmlspecialchars($produk_nama);
+            } else {
+                $produk_nama = htmlspecialchars($produk_nama);
+            }
             $data[] = array(
                 $row->no_penjualan,
-                isset($row->pelanggan_nama) ? $row->pelanggan_nama : 'Umum',
-                $row->gudang_nama,
+                $produk_nama,
                 date('d/m/Y H:i', strtotime($row->tanggal)),
-                number_format($row->total, 0, ',', '.'),
+                number_format($row->subtotal, 0, ',', '.'),
                 $status_badge,
                 $this->get_action_buttons($row->id, $row->status),
                 $row->id

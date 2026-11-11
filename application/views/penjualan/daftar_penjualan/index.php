@@ -47,8 +47,7 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
                     </th>
                     <?php } ?>
                     <th>No Penjualan</th>
-                    <th>Pelanggan</th>
-                    <th>Gudang</th>
+                    <th>Kode &amp; Nama Produk</th>
                     <th>Tanggal</th>
                     <th>Total</th>
                     <th>Status</th>
@@ -153,12 +152,12 @@ $(document).ready(function() {
     if (isAdminCancel) {
         checkboxCol.push({
             // Kolom checkbox: data = id penjualan (kolom terkirim terakhir dari server)
-            data: 7,
+            data: 6,
             orderable: false,
             searchable: false,
             className: 'text-center',
             render: function(data, type, row) {
-                if (String(row[5]).indexOf('CANCELLED') > -1) {
+                if (String(row[4]).indexOf('CANCELLED') > -1) {
                     return '<input type="checkbox" class="row-check" disabled title="Sudah dibatalkan">';
                 }
                 return '<input type="checkbox" class="row-check" value="' + data + '">';
@@ -177,9 +176,8 @@ $(document).ready(function() {
             { data: 2 },
             { data: 3 },
             { data: 4 },
-            { data: 5 },
-            { data: 6, orderable: false, searchable: false },
-            { data: 7, visible: false, searchable: false }
+            { data: 5, orderable: false, searchable: false },
+            { data: 6, visible: false, searchable: false }
         ]),
         drawCallback: function() {
             // Setiap kali DataTables render ulang (pindah halaman / cari / reload)
