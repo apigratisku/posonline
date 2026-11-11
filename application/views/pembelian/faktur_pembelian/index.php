@@ -43,9 +43,13 @@
             <form id="fakturPembelianForm">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="faktur_id">
-                    <input type="hidden" name="no_faktur" id="no_faktur">
 
                     <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">No. Faktur</label>
+                            <input type="text" class="form-control" name="no_faktur" id="no_faktur" maxlength="50" placeholder="Otomatis jika dikosongkan">
+                            <div class="form-text">Kosongkan untuk nomor otomatis.</div>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label">Pesanan Pembelian (PO)</label>
                             <select class="form-select" name="po_id" id="po_id">
@@ -64,6 +68,8 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                    </div>
+                    <div class="row g-3 mb-3">
                         <div class="col-md-4">
                             <label class="form-label">Jenis Pembayaran</label>
                             <select class="form-select" name="jenis_pembayaran_id" id="jenis_pembayaran_id">
@@ -73,8 +79,6 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                    </div>
-                    <div class="row g-3 mb-3">
                         <div class="col-md-4">
                             <label class="form-label">Tanggal Pembelian <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" name="tanggal" id="tanggal" value="<?= date('Y-m-d') ?>" required>

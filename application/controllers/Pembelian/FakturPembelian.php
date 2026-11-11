@@ -87,6 +87,7 @@ class FakturPembelian extends MY_Controller {
         }
         
         $this->form_validation->set_rules('supplier_id', 'Supplier', 'required');
+        $this->form_validation->set_rules('no_faktur', 'No. Faktur', 'trim|max_length[50]');
         
         if ($this->form_validation->run() == false) {
             $this->ajax_response(false, 'Validasi gagal', null, $this->form_validation->error_array());
@@ -96,6 +97,15 @@ class FakturPembelian extends MY_Controller {
         $items = json_decode($this->input->post('items'), true);
         if (empty($items)) {
             $this->ajax_response(false, 'Item faktur tidak boleh kosong');
+            return;
+        }
+        
+        // No. Faktur: isian manual, kalau kosong generate otomatis. Tidak boleh duplikat.
+        $no_faktur = trim($this->input->post('no_faktur'));
+        if ($no_faktur === '') {
+            $no_faktur = $this->faktur_pembelian_model->generate_no_faktur();
+        } elseif ($this->faktur_pembelian_model->no_faktur_exists($no_faktur, $id)) {
+            $this->ajax_response(false, 'No. Faktur "' . $no_faktur . '" sudah digunakan');
             return;
         }
         
@@ -109,7 +119,7 @@ class FakturPembelian extends MY_Controller {
         $total = $subtotal - $diskon + $pajak;
         
         $data = array(
-            'no_faktur' => $id ? $this->input->post('no_faktur') : $this->faktur_pembelian_model->generate_no_faktur(),
+            'no_faktur' => $no_faktur,
             'po_id' => $this->input->post('po_id') ?: null,
             'supplier_id' => $this->input->post('supplier_id'),
             'jenis_pembayaran_id' => $this->input->post('jenis_pembayaran_id') ?: null,

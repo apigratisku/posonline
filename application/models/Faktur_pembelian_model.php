@@ -31,6 +31,20 @@ class Faktur_pembelian_model extends MY_Model {
         return $prefix . str_pad($new_num, 4, '0', STR_PAD_LEFT);
     }
     
+    /**
+     * Cek No. Faktur sudah dipakai atau belum
+     */
+    public function no_faktur_exists($no_faktur, $exclude_id = null) {
+        if (empty($no_faktur)) {
+            return false;
+        }
+        $this->db->where('no_faktur', $no_faktur);
+        if ($exclude_id) {
+            $this->db->where('id !=', $exclude_id);
+        }
+        return $this->db->count_all_results($this->table) > 0;
+    }
+
     public function get_by_id_with_relations($id) {
         $this->db->select('fp.*, s.nama as supplier_nama, pp.no_po, mby.nama as jenis_pembayaran_nama');
         $this->db->from($this->table . ' fp');
