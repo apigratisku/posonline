@@ -88,7 +88,7 @@
                                     <th style="min-width:200px">Produk</th>
                                     <th style="width:100px">Qty</th>
                                     <th style="width:130px">Harga Beli</th>
-                                    <th style="width:110px">Diskon</th>
+                                    <th style="width:140px">Diskon (%)</th>
                                     <th style="width:130px">Subtotal</th>
                                     <th style="width:50px"></th>
                                 </tr>
@@ -105,8 +105,11 @@
                             </div>
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
-                                    <label class="form-label small">Diskon Global</label>
-                                    <input type="number" class="form-control form-control-sm" name="diskon" id="diskon" value="0" min="0" step="1">
+                                    <label class="form-label small">Diskon Global (%)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control form-control-sm" name="diskon" id="diskon" value="0" min="0" max="100" step="0.01">
+                                        <span class="input-group-text">%</span>
+                                    </div>
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label small">Pajak</label>
@@ -160,7 +163,7 @@
                                 <th>Produk</th>
                                 <th class="text-end">Qty</th>
                                 <th class="text-end">Harga</th>
-                                <th class="text-end">Diskon</th>
+                                <th class="text-end">Diskon (%)</th>
                                 <th class="text-end">Subtotal</th>
                             </tr>
                         </thead>

@@ -33,32 +33,51 @@
         data = data || {};
         var qty = data.qty || 1;
         var harga = data.harga || 0;
-        var diskon = data.diskon || 0;
-        var subtotal = (qty * harga) - diskon;
+        // diskon diisi sebagai persentase (0-100), subtotal dihitung dari nilai rupiahnya
+        var diskonPersen = parseFloat(data.diskon_persen) || 0;
+        var diskonNominal = (qty * harga) * (diskonPersen / 100);
+        var subtotal = (qty * harga) - diskonNominal;
 
         var row = '<tr class="po-item-row">' +
             '<td>' + getProdukSelectHtml(data.produk_id) + '</td>' +
             '<td><input type="number" class="form-control form-control-sm item-qty" min="1" step="1" value="' + qty + '" required></td>' +
             '<td><input type="number" class="form-control form-control-sm item-harga" min="0" step="1" value="' + harga + '" required></td>' +
-            '<td><input type="number" class="form-control form-control-sm item-diskon" min="0" step="1" value="' + diskon + '"></td>' +
+            '<td><div class="input-group input-group-sm"><input type="number" class="form-control item-diskon" min="0" max="100" step="0.01" value="' + diskonPersen + '"><span class="input-group-text">%</span></div></td>' +
             '<td class="item-subtotal text-end align-middle">' + formatRupiah(subtotal) + '</td>' +
             '<td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-item" title="Hapus"><i class="fas fa-times"></i></button></td>' +
             '</tr>';
         return row;
     }
 
+    // Ambil persentase diskon sebuah baris (0-100)
+    function getRowDiskonPersen($row) {
+        return Math.min(Math.max(parseFloat($row.find('.item-diskon').val()) || 0, 0), 100);
+    }
+
+    // Konversi persentase diskon baris ke nominal rupiah
+    function getRowDiskonNominal($row) {
+        var qty = parseFloat($row.find('.item-qty').val()) || 0;
+        var harga = parseFloat($row.find('.item-harga').val()) || 0;
+        return (qty * harga) * (getRowDiskonPersen($row) / 100);
+    }
+
+    // Ambil persentase diskon global (0-100)
+    function getGlobalDiskonPersen() {
+        return Math.min(Math.max(parseFloat($('#diskon').val()) || 0, 0), 100);
+    }
+
     function recalcTotals() {
         var subtotal = 0;
         $('#poItemsBody .po-item-row').each(function () {
-            var qty = parseFloat($(this).find('.item-qty').val()) || 0;
-            var harga = parseFloat($(this).find('.item-harga').val()) || 0;
-            var diskon = parseFloat($(this).find('.item-diskon').val()) || 0;
-            var lineSub = (qty * harga) - diskon;
-            $(this).find('.item-subtotal').text(formatRupiah(lineSub));
+            var $row = $(this);
+            var qty = parseFloat($row.find('.item-qty').val()) || 0;
+            var harga = parseFloat($row.find('.item-harga').val()) || 0;
+            var lineSub = (qty * harga) - getRowDiskonNominal($row);
+            $row.find('.item-subtotal').text(formatRupiah(lineSub));
             subtotal += lineSub;
         });
 
-        var diskonGlobal = parseFloat($('#diskon').val()) || 0;
+        var diskonGlobal = subtotal * (getGlobalDiskonPersen() / 100);
         var pajak = parseFloat($('#pajak').val()) || 0;
         var total = subtotal - diskonGlobal + pajak;
 
@@ -71,10 +90,11 @@
         var valid = true;
 
         $('#poItemsBody .po-item-row').each(function () {
-            var produkId = $(this).find('.item-produk').val();
-            var qty = parseFloat($(this).find('.item-qty').val()) || 0;
-            var harga = parseFloat($(this).find('.item-harga').val()) || 0;
-            var diskon = parseFloat($(this).find('.item-diskon').val()) || 0;
+            var $row = $(this);
+            var produkId = $row.find('.item-produk').val();
+            var qty = parseFloat($row.find('.item-qty').val()) || 0;
+            var harga = parseFloat($row.find('.item-harga').val()) || 0;
+            var diskon = getRowDiskonNominal($row);
 
             if (!produkId || qty <= 0) {
                 valid = false;
@@ -85,7 +105,8 @@
                 produk_id: parseInt(produkId, 10),
                 qty: qty,
                 harga: harga,
-                diskon: diskon
+                diskon: diskon,
+                diskon_persen: getRowDiskonPersen($row)
             });
         });
 
@@ -145,7 +166,7 @@
                 $('#gudang_id').val(po.gudang_id);
                 $('#tanggal').val(po.tanggal);
                 $('#keterangan').val(po.keterangan || '');
-                $('#diskon').val(po.diskon || 0);
+                $('#diskon').val(po.subtotal > 0 ? ((parseFloat(po.diskon) || 0) / parseFloat(po.subtotal)) * 100 : 0);
                 $('#pajak').val(po.pajak || 0);
 
                 $('#poItemsBody').empty();
@@ -155,7 +176,10 @@
                             produk_id: d.produk_id,
                             qty: d.qty,
                             harga: d.harga,
-                            diskon: d.diskon || 0
+                            // DB menyimpan nominal, tampilkan kembali sebagai persentase dari harga beli
+                            diskon_persen: (parseFloat(d.harga) > 0 && parseFloat(d.qty) > 0)
+                                ? ((parseFloat(d.diskon) || 0) / (parseFloat(d.harga) * parseFloat(d.qty))) * 100
+                                : 0
                         });
                     });
                 } else {
@@ -203,7 +227,9 @@
                         '<td>' + escapeHtml((d.produk_kode || '') + ' - ' + (d.produk_nama || '')) + '</td>' +
                         '<td class="text-end">' + Number(d.qty).toLocaleString('id-ID') + '</td>' +
                         '<td class="text-end">' + formatRupiah(d.harga) + '</td>' +
-                        '<td class="text-end">' + formatRupiah(d.diskon || 0) + '</td>' +
+                        '<td class="text-end">' + (parseFloat(d.harga) > 0 && parseFloat(d.qty) > 0
+                            ? (((parseFloat(d.diskon) || 0) / (parseFloat(d.harga) * parseFloat(d.qty))) * 100).toFixed(2) + '%'
+                            : '0%') + '</td>' +
                         '<td class="text-end">' + formatRupiah(d.subtotal) + '</td>' +
                         '</tr>';
                 });

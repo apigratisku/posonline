@@ -104,7 +104,10 @@ class PesananPembelian extends MY_Controller {
         foreach ($items as $item) {
             $subtotal += ($item['qty'] * $item['harga']) - (isset($item['diskon']) ? $item['diskon'] : 0);
         }
-        $diskon = floatval($this->input->post('diskon')) ?: 0;
+        // Diskon dari form adalah persentase (0-100), konversi ke nominal dari subtotal
+        $diskonPersen = floatval($this->input->post('diskon')) ?: 0;
+        $diskonPersen = min(max($diskonPersen, 0), 100);
+        $diskon = $subtotal * ($diskonPersen / 100);
         $pajak = floatval($this->input->post('pajak')) ?: 0;
         $total = $subtotal - $diskon + $pajak;
         

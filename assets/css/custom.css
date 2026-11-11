@@ -833,11 +833,53 @@ body.has-mobile-nav {
 .table-responsive {
     border-radius: var(--radius);
     -webkit-overflow-scrolling: touch;
+    overflow-x: auto !important;
+}
+
+/* Tabel biasa (non-DataTables) juga melebar mengikuti isi kolom */
+.table-responsive > .table {
+    width: max-content !important;
+    min-width: 100%;
+}
+
+/* Form: grid lebih rapat supaya semua field terlihat tanpa dipotong */
+.row {
+    --bs-gutter-x: 0.875rem;
+    --bs-gutter-y: 0.5rem;
+}
+
+/* Modal: lebar penuh mengikuti viewport, tapi tetap patuhi ukuran default Bootstrap */
+.modal-dialog:not(.modal-fullscreen-sm-down):not(.modal-fullscreen) {
+    max-width: min(500px, calc(100vw - 2rem));
+}
+
+@media (min-width: 576px) {
+    .modal-dialog.modal-lg {
+        max-width: min(900px, calc(100vw - 2rem));
+    }
+
+    .modal-dialog.modal-xl {
+        max-width: min(1200px, calc(100vw - 2rem));
+    }
+}
+
+/* Tabel dalam modal: isi kolom terlihat, scroll horizontal kalau perlu */
+.modal-body .table {
+    width: max-content;
+    min-width: 100%;
+}
+
+/* Kolom isi form tidak boleh terpotong */
+.form-control,
+.form-select,
+.input-group {
+    max-width: 100%;
 }
 
 /* DataTables */
 .dataTables_wrapper {
     width: 100%;
+    max-width: 100%;
 }
 
 .dataTables_wrapper .dataTables_filter input,
@@ -854,33 +896,45 @@ body.has-mobile-nav {
     border-radius: var(--radius) !important;
 }
 
-/* DataTables — mobile: scroll horizontal agar semua kolom terlihat */
+/* DataTables — scroll horizontal agar semua kolom terlihat (semua ukuran layar) */
 .dt-scroll-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+/* Card yang berisi tabel: jangan clip dropdown/paginasi */
+.card.card-has-datatable {
+    overflow: visible;
+}
+
+.dataTables_wrapper .dataTables_scroll,
+.dataTables_wrapper .dataTables_scrollBody {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Tabel melebar mengikuti isi kolom, minimal penuh lebar container */
+.dataTables_wrapper table.dataTable {
+    width: max-content !important;
+    min-width: 100%;
+    max-width: none !important;
+}
+
+.dataTables_wrapper table.dataTable thead th,
+.dataTables_wrapper table.dataTable tbody td {
+    white-space: nowrap;
+}
+
+/* Kolom teks panjang yang boleh wrap — tambahkan class="col-wrap" pada th/td */
+.dataTables_wrapper table.dataTable th.col-wrap,
+.dataTables_wrapper table.dataTable td.col-wrap {
+    white-space: normal !important;
+    min-width: 180px;
+    max-width: 420px;
 }
 
 @media (max-width: 991.98px) {
-    .card.card-has-datatable {
-        overflow: visible;
-    }
-
-    .dataTables_wrapper .dataTables_scroll,
-    .dataTables_wrapper .dataTables_scrollBody {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .dataTables_wrapper table.dataTable {
-        width: max-content !important;
-        min-width: 100%;
-    }
-
-    .dataTables_wrapper table.dataTable thead th,
-    .dataTables_wrapper table.dataTable tbody td {
-        white-space: nowrap;
-    }
-
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter {
         float: none;
@@ -986,6 +1040,22 @@ body.has-mobile-nav {
 
 .modal-body {
     padding: 1.25rem;
+}
+
+/* Modal body bisa di-scroll kalau form panjang (desktop; di mobile modal fullscreen mengatur sendiri) */
+@media (min-width: 576px) {
+    .modal-body {
+        max-height: calc(100vh - 210px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Modal di mobile: tinggi penuh dikelola Bootstrap fullscreen, jangan batasi */
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        max-width: 100%;
+    }
 }
 
 .modal-footer {

@@ -59,12 +59,20 @@
     }
 
     function setupDataTableScrollContainer($table) {
-        var $container = $table.closest('.card-body, .table-responsive');
-        if (!$container.length) {
-            $container = $table.parent();
+        var $card = $table.closest('.card');
+        if ($card.length) {
+            $card.addClass('card-has-datatable');
         }
-        $container.addClass('dt-scroll-container');
-        $table.closest('.card').addClass('card-has-datatable');
+
+        // Kalau scroll horizontal sudah ditangani DataTables (.dataTables_scroll) atau .table-responsive,
+        // tidak perlu bungkus lagi supaya tidak muncul scroll ganda.
+        if ($table.closest('.table-responsive, .dataTables_scroll, .dt-scroll-container').length) {
+            return;
+        }
+
+        // Batasi area scroll horizontal hanya di sekitar tabel (bukan seluruh card-body),
+        // supaya filter, info, dan pagination tetap kelihatan.
+        $table.wrap('<div class="dt-scroll-container"></div>');
     }
 
     window.initDataTable = function(tableId, options) {
