@@ -709,7 +709,8 @@ function processPayment() {
             $('#btnProcessPayment').prop('disabled', false);
             var errorMsg = status === 'timeout' ? 'Waktu permintaan habis.' : 'Gagal memproses pembayaran';
             if (xhr.responseJSON && xhr.responseJSON.message) errorMsg = xhr.responseJSON.message;
-            showNotification('error', errorMsg);
+            // Sertakan status HTTP supaya error server (500/403) mudah dilacak
+            showNotification('error', errorMsg + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
         }
     });
 }
