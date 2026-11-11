@@ -88,6 +88,7 @@ class FakturPembelian extends MY_Controller {
         
         $this->form_validation->set_rules('supplier_id', 'Supplier', 'required');
         $this->form_validation->set_rules('no_faktur', 'No. Faktur', 'trim|max_length[50]');
+        $this->form_validation->set_rules('diskon_tipe', 'Tipe Diskon', 'trim|in_list[persen,nominal]');
         
         if ($this->form_validation->run() == false) {
             $this->ajax_response(false, 'Validasi gagal', null, $this->form_validation->error_array());
@@ -109,12 +110,25 @@ class FakturPembelian extends MY_Controller {
             return;
         }
         
-        // Calculate totals
+        // Diskon item: JS mengirim nominal (sudah dikonversi) + persen sebagai info.
+        // Server tetap hitung ulang dari persen kalau dikirim, supaya aman dari manipulasi.
         $subtotal = 0;
-        foreach ($items as $item) {
-            $subtotal += ($item['qty'] * $item['harga']) - (isset($item['diskon']) ? $item['diskon'] : 0);
+        foreach ($items as $key => $item) {
+            $qty   = floatval($item['qty']);
+            $harga = floatval($item['harga']);
+            $diskon = isset($item['diskon_persen']) && floatval($item['diskon_persen']) > 0
+                ? ($qty * $harga) * (min(max(floatval($item['diskon_persen']), 0), 100) / 100)
+                : max(floatval(isset($item['diskon']) ? $item['diskon'] : 0), 0);
+            $items[$key]['diskon'] = $diskon;
+            $subtotal += ($qty * $harga) - $diskon;
         }
-        $diskon = floatval($this->input->post('diskon')) ?: 0;
+        
+        // Diskon global: input bisa persen atau nominal, dikonversi ke nominal
+        $diskonInput = floatval($this->input->post('diskon')) ?: 0;
+        $diskonTipe  = $this->input->post('diskon_tipe') === 'persen' ? 'persen' : 'nominal';
+        $diskon = $diskonTipe === 'persen'
+            ? $subtotal * (min(max($diskonInput, 0), 100) / 100)
+            : max($diskonInput, 0);
         $pajak = floatval($this->input->post('pajak')) ?: 0;
         $total = $subtotal - $diskon + $pajak;
         

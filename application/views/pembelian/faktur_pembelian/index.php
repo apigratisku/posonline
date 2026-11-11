@@ -104,13 +104,13 @@
                         <table class="table table-sm table-bordered" id="fakturItemsTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="min-width:200px">Nama Obat</th>
+                                    <th style="min-width:220px">Nama Obat</th>
                                     <th style="min-width:110px">Satuan Beli</th>
-                                    <th style="width:80px">Qty</th>
+                                    <th style="width:110px">Qty</th>
                                     <th style="min-width:110px">No. Batch</th>
                                     <th style="min-width:130px">Expired Date</th>
                                     <th style="width:120px">Harga Beli</th>
-                                    <th style="width:100px">Diskon</th>
+                                    <th style="min-width:145px">Diskon</th>
                                     <th style="width:120px">Subtotal</th>
                                     <th style="width:45px"></th>
                                 </tr>
@@ -127,12 +127,24 @@
                             </div>
                             <div class="row g-2 mb-2">
                                 <div class="col-6">
-                                    <label class="form-label small">Diskon Global</label>
-                                    <input type="number" class="form-control form-control-sm" name="diskon" id="diskon" value="0" min="0" step="1" onchange="calcTotal()">
+                                    <label class="form-label small">Tipe Diskon Global</label>
+                                    <select class="form-select form-select-sm" id="diskon_tipe" onchange="toggleDiskonTipe(); calcTotal();">
+                                        <option value="persen">Persen (%)</option>
+                                        <option value="nominal">Nominal (Rp)</option>
+                                    </select>
                                 </div>
                                 <div class="col-6">
+                                    <label class="form-label small" id="diskonLabel">Diskon Global (%)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control form-control-sm" name="diskon" id="diskon" value="0" min="0" max="100" step="0.01" oninput="calcTotal()">
+                                        <span class="input-group-text" id="diskonSuffix">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6 offset-6">
                                     <label class="form-label small">Pajak</label>
-                                    <input type="number" class="form-control form-control-sm" name="pajak" id="pajak" value="0" min="0" step="1" onchange="calcTotal()">
+                                    <input type="number" class="form-control form-control-sm" name="pajak" id="pajak" value="0" min="0" step="1" oninput="calcTotal()">
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between border-top pt-2">
@@ -370,13 +382,23 @@ $(document).ready(function() {
                         let details = res.data.details;
                         
                         $('#supplier_id').val(po.supplier_id);
+                        // Diskon dari PO disimpan nominal di DB -> tampilkan sebagai nominal
+                        $('#diskon_tipe').val('nominal');
+                        toggleDiskonTipe();
                         $('#diskon').val(po.diskon || 0);
                         $('#pajak').val(po.pajak || 0);
                         
                         $('#fakturItemsBody').empty();
                         if (details && details.length > 0) {
                             details.forEach(function(d) {
-                                addItemRow({ produkId: d.produk_id, qty: d.qty, harga: d.harga, diskon: d.diskon || 0, subtotal: d.subtotal });
+                                addItemRow({
+                                    produkId: d.produk_id,
+                                    produkLabel: d.produk_kode && d.produk_nama ? (d.produk_kode + ' - ' + d.produk_nama) : undefined,
+                                    qty: d.qty,
+                                    harga: d.harga,
+                                    diskon: d.diskon || 0,
+                                    subtotal: d.subtotal
+                                });
                             });
                         } else {
                             addItemRow();
@@ -414,16 +436,6 @@ try {
     console.error("Failed to parse satuans JSON", e);
 }
 
-function getProdukOptionsHTML(selectedId = null) {
-    let html = '<option value="">Pilih Produk</option>';
-    produks.forEach(p => {
-        let selected = selectedId == p.id ? 'selected' : '';
-        let konversi = p.satuan_konversi > 0 ? p.satuan_konversi : 1;
-        html += `<option value="${p.id}" data-harga="${p.harga_beli}" data-konversi="${konversi}" data-satuan-beli="${p.satuan_beli_id || ''}" ${selected}>${p.kode} - ${p.nama}</option>`;
-    });
-    return html;
-}
-
 function getSatuanOptionsHTML(selectedId = null) {
     let html = '<option value="">-</option>';
     satuans.forEach(s => {
@@ -432,6 +444,142 @@ function getSatuanOptionsHTML(selectedId = null) {
     });
     return html;
 }
+
+function findProduk(id) {
+    let found = produks.find(p => p.id == id);
+    if (!found) {
+        return { id: '', kode: '', nama: '', label: '', harga_beli: 0, satuan_konversi: 1, satuan_beli_id: null };
+    }
+    found.label = found.kode + ' - ' + found.nama;
+    return found;
+}
+
+/**
+ * Autocomplete nama obat untuk satu baris item.
+ * Input: ketik nama/kode -> dropdown daftar produk -> pilih -> isi harga + satuan.
+ */
+function bindProdukAutocomplete($row) {
+    let $input = $row.find('.item-produk-nama');
+    let $hidden = $row.find('.item-produk');
+    let $menu = $row.find('.ac-menu');
+    let activeIndex = -1;
+    let matches = [];
+
+    function closeMenu() {
+        $menu.removeClass('ac-open').empty();
+        activeIndex = -1;
+    }
+
+    function renderMenu(list) {
+        matches = list;
+        activeIndex = list.length ? 0 : -1;
+
+        if (!list.length) {
+            $menu.html('<div class="ac-empty">Obat tidak ditemukan</div>');
+            $menu.addClass('ac-open');
+            return;
+        }
+
+        let html = '';
+        list.forEach(function(p, i) {
+            html += `<div class="ac-item${i === activeIndex ? ' ac-active' : ''}" data-index="${i}">`
+                + `<span class="ac-code">${escapeHtml(p.kode)}</span>${escapeHtml(p.nama)}`
+                + `</div>`;
+        });
+        $menu.html(html).addClass('ac-open');
+    }
+
+    function highlight() {
+        $menu.find('.ac-item').each(function(i) {
+            $(this).toggleClass('ac-active', i === activeIndex);
+        });
+        let $active = $menu.find('.ac-item.ac-active');
+        if ($active.length) {
+            $active[0].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function choose(index) {
+        let p = matches[index];
+        if (!p) return;
+
+        $hidden.val(p.id);
+        $input.val(p.kode + ' - ' + p.nama);
+        closeMenu();
+
+        let konversi = p.satuan_konversi > 0 ? p.satuan_konversi : 1;
+        $row.find('.item-harga').val(Math.round((p.harga_beli || 0) * konversi));
+        if (p.satuan_beli_id) {
+            $row.find('.item-satuan').val(p.satuan_beli_id);
+        }
+        calcRow($input);
+    }
+
+    $input.on('input', function() {
+        let q = $(this).val().trim().toLowerCase();
+        if (!q) {
+            $hidden.val('');
+            closeMenu();
+            return;
+        }
+        renderMenu(produks.filter(p =>
+            p.nama.toLowerCase().includes(q) || p.kode.toLowerCase().includes(q)
+        ).slice(0, 50));
+    })
+    .on('focus', function() {
+        // Tampilkan semua obat sebagai titik awal
+        $(this).select();
+        renderMenu(produks.slice(0, 50));
+    })
+    .on('keydown', function(e) {
+        if (!$menu.hasClass('ac-open')) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!matches.length) return;
+            activeIndex += (e.key === 'ArrowDown' ? 1 : -1);
+            if (activeIndex < 0) activeIndex = matches.length - 1;
+            if (activeIndex >= matches.length) activeIndex = 0;
+            highlight();
+        } else if (e.key === 'Enter') {
+            if (activeIndex >= 0) {
+                e.preventDefault();
+                choose(activeIndex);
+            }
+        } else if (e.key === 'Escape') {
+            closeMenu();
+        }
+    })
+    .on('blur', function() {
+        // Beri jeda supaya klik item dropdown sempat diproses
+        setTimeout(function() {
+            closeMenu();
+            if (!$hidden.val()) {
+                $input.val('');
+            }
+        }, 180);
+    });
+
+    $menu.on('mousedown', '.ac-item', function(e) {
+        e.preventDefault(); // cegah input kehilangan fokus sebelum klik diproses
+        choose(parseInt($(this).data('index'), 10));
+    });
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Tutup semua dropdown autocomplete yang masih terbuka
+$(document).on('click', function(e) {
+    if (!$(e.target).closest('.ac-wrap').length) {
+        $('.ac-menu.ac-open').removeClass('ac-open').empty();
+    }
+});
 
 function addItemRow(opts = {}) {
     opts = opts || {};
@@ -443,27 +591,40 @@ function addItemRow(opts = {}) {
     const satuanBeliId = opts.satuanBeliId || '';
     const noBatch = opts.noBatch || '';
     const expired = opts.expiredDate || '';
+    const produkLabel = opts.produkLabel || findProduk(produkId).label;
+    const diskonTipe = opts.diskonTipe || 'nominal';
 
     let tr = `
         <tr class="item-row">
             <td>
-                <select class="form-select form-select-sm item-produk" onchange="calcRow(this)">
-                    ${getProdukOptionsHTML(produkId)}
-                </select>
+                <div class="ac-wrap">
+                    <input type="text" class="form-control form-control-sm item-produk-nama" placeholder="Ketik nama obat..." autocomplete="off" value="${escapeHtml(produkLabel)}">
+                    <input type="hidden" class="item-produk" value="${produkId}">
+                    <div class="ac-menu"></div>
+                </div>
             </td>
             <td><select class="form-select form-select-sm item-satuan">${getSatuanOptionsHTML(satuanBeliId)}</select></td>
-            <td><input type="number" class="form-control form-control-sm item-qty text-end" value="${qty}" min="1" onchange="calcRow(this)"></td>
+            <td><input type="number" class="form-control form-control-sm item-qty text-end" value="${qty}" min="1" oninput="calcRow(this)"></td>
             <td><input type="text" class="form-control form-control-sm item-batch" value="${noBatch}" placeholder="No. Batch"></td>
             <td><input type="date" class="form-control form-control-sm item-expired" value="${expired}"></td>
-            <td><input type="number" class="form-control form-control-sm item-harga text-end" value="${harga}" min="0" onchange="calcRow(this)"></td>
-            <td><input type="number" class="form-control form-control-sm item-diskon text-end" value="${diskon}" min="0" onchange="calcRow(this)"></td>
+            <td><input type="number" class="form-control form-control-sm item-harga text-end" value="${harga}" min="0" oninput="calcRow(this)"></td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control form-control-sm item-diskon text-end" value="${diskon}" min="0" step="0.01" oninput="calcRow(this)">
+                    <select class="form-select form-select-sm item-diskon-tipe" style="max-width:78px" onchange="calcRow(this)">
+                        <option value="nominal" ${diskonTipe === 'nominal' ? 'selected' : ''}>Rp</option>
+                        <option value="persen" ${diskonTipe === 'persen' ? 'selected' : ''}>%</option>
+                    </select>
+                </div>
+            </td>
             <td><input type="text" class="form-control form-control-sm item-subtotal text-end" value="${formatCurrency(subtotal)}" readonly></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="$(this).closest('tr').remove(); calcTotal();"><i class="fas fa-trash"></i></button></td>
         </tr>
     `;
     $('#fakturItemsBody').append(tr);
+    bindProdukAutocomplete($('#fakturItemsBody tr').last());
     if (produkId && !satuanBeliId) {
-        let sb = $('#fakturItemsBody tr').last().find('.item-produk option:selected').data('satuan-beli');
+        let sb = findProduk(produkId).satuan_beli_id;
         if (sb) {
             $('#fakturItemsBody tr').last().find('.item-satuan').val(sb);
         }
@@ -471,22 +632,50 @@ function addItemRow(opts = {}) {
     calcTotal();
 }
 
+/** Diskon item: clamp 0-100 kalau tipe persen */
+function getRowDiskonPersen($row) {
+    if ($row.find('.item-diskon-tipe').val() !== 'persen') return 0;
+    return Math.min(Math.max(parseFloat($row.find('.item-diskon').val()) || 0, 0), 100);
+}
+
+/** Diskon item dalam rupiah (hasil konversi dari persen kalau perlu) */
+function getRowDiskonNominal($row) {
+    let tipe = $row.find('.item-diskon-tipe').val();
+    let nilai = parseFloat($row.find('.item-diskon').val()) || 0;
+    if (tipe === 'persen') {
+        let qty = parseFloat($row.find('.item-qty').val()) || 0;
+        let harga = parseFloat($row.find('.item-harga').val()) || 0;
+        return (qty * harga) * (Math.min(Math.max(nilai, 0), 100) / 100);
+    }
+    return Math.max(nilai, 0);
+}
+
+/** Diskon global dalam rupiah, mengikuti tipe yang dipilih */
+function getGlobalDiskonNominal(subtotal) {
+    let nilai = parseFloat($('#diskon').val()) || 0;
+    if ($('#diskon_tipe').val() === 'persen') {
+        return subtotal * (Math.min(Math.max(nilai, 0), 100) / 100);
+    }
+    return Math.max(nilai, 0);
+}
+
+/** Ganti label/suffix/limit input diskon global saat tipe berubah */
+function toggleDiskonTipe() {
+    let isPersen = $('#diskon_tipe').val() === 'persen';
+    $('#diskonLabel').text(isPersen ? 'Diskon Global (%)' : 'Diskon Global (Rp)');
+    $('#diskonSuffix').text(isPersen ? '%' : 'Rp');
+    $('#diskon').attr('max', isPersen ? 100 : '');
+    $('#diskon').attr('step', isPersen ? '0.01' : '1');
+    if (isPersen) {
+        $('#diskon').val(Math.min(Math.max(parseFloat($('#diskon').val()) || 0, 0), 100));
+    }
+}
+
 function calcRow(el) {
     let tr = $(el).closest('tr');
-    let produkSelect = tr.find('.item-produk');
-    if ($(el).hasClass('item-produk')) {
-        let opt = produkSelect.find('option:selected');
-        let hargaUnit = parseFloat(opt.data('harga')) || 0;
-        let konversi = parseFloat(opt.data('konversi')) || 1;
-        let satuanBeliId = opt.data('satuan-beli');
-        tr.find('.item-harga').val(Math.round(hargaUnit * konversi));
-        if (satuanBeliId) {
-            tr.find('.item-satuan').val(satuanBeliId);
-        }
-    }
     let qty = parseFloat(tr.find('.item-qty').val()) || 0;
     let harga = parseFloat(tr.find('.item-harga').val()) || 0;
-    let diskon = parseFloat(tr.find('.item-diskon').val()) || 0;
+    let diskon = getRowDiskonNominal(tr);
     let subtotal = (qty * harga) - diskon;
     tr.find('.item-subtotal').val(formatCurrency(subtotal));
     calcTotal();
@@ -495,14 +684,14 @@ function calcRow(el) {
 function calcTotal() {
     let subtotal = 0;
     $('#fakturItemsBody .item-row').each(function() {
-        let qty = parseFloat($(this).find('.item-qty').val()) || 0;
-        let harga = parseFloat($(this).find('.item-harga').val()) || 0;
-        let diskon = parseFloat($(this).find('.item-diskon').val()) || 0;
-        subtotal += (qty * harga) - diskon;
+        let $row = $(this);
+        let qty = parseFloat($row.find('.item-qty').val()) || 0;
+        let harga = parseFloat($row.find('.item-harga').val()) || 0;
+        subtotal += (qty * harga) - getRowDiskonNominal($row);
     });
     $('#fakturSubtotalDisplay').text(formatCurrency(subtotal));
-    
-    let diskonGlb = parseFloat($('#diskon').val()) || 0;
+
+    let diskonGlb = getGlobalDiskonNominal(subtotal);
     let pajak = parseFloat($('#pajak').val()) || 0;
     let total = subtotal - diskonGlb + pajak;
     $('#fakturTotalDisplay').text(formatCurrency(total));
@@ -513,6 +702,8 @@ function addData() {
     $('#faktur_id').val('');
     $('#fakturModalTitle').text('Tambah Faktur Pembelian');
     $('#fakturItemsBody').empty();
+    $('#diskon_tipe').val('nominal');
+    toggleDiskonTipe();
     addItemRow();
     $('#fakturPembelianModal').modal('show');
 }
@@ -526,13 +717,15 @@ function submitFakturForm() {
     let items = [];
     let valid = true;
     $('#fakturItemsBody .item-row').each(function() {
-        let produk_id = $(this).find('.item-produk').val();
-        let satuan_beli_id = $(this).find('.item-satuan').val();
-        let qty = $(this).find('.item-qty').val();
-        let no_batch = $(this).find('.item-batch').val();
-        let expired_date = $(this).find('.item-expired').val();
-        let harga = $(this).find('.item-harga').val();
-        let diskon = $(this).find('.item-diskon').val();
+        let $row = $(this);
+        let produk_id = $row.find('.item-produk').val();
+        let satuan_beli_id = $row.find('.item-satuan').val();
+        let qty = $row.find('.item-qty').val();
+        let no_batch = $row.find('.item-batch').val();
+        let expired_date = $row.find('.item-expired').val();
+        let harga = $row.find('.item-harga').val();
+        let diskon = getRowDiskonNominal($row);
+        let diskon_persen = getRowDiskonPersen($row);
         
         if (!produk_id || qty <= 0) {
             valid = false;
@@ -544,7 +737,8 @@ function submitFakturForm() {
                 no_batch: no_batch,
                 expired_date: expired_date,
                 harga: harga,
-                diskon: diskon
+                diskon: diskon,
+                diskon_persen: diskon_persen
             });
         }
     });

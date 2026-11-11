@@ -1282,6 +1282,69 @@ body.has-mobile-nav {
     color: var(--primary) !important;
 }
 
+/* ============================================
+   AUTOCOMPLETE (pencarian nama obat di form faktur)
+   ============================================ */
+
+.ac-wrap {
+    position: relative;
+}
+
+.ac-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1080;
+    max-height: 260px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 2px;
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    display: none;
+}
+
+.ac-menu.ac-open {
+    display: block;
+}
+
+.ac-item {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.ac-item:last-child {
+    border-bottom: 0;
+}
+
+.ac-item:hover,
+.ac-item.ac-active {
+    background: #f1f5f9;
+}
+
+.ac-item .ac-code {
+    color: var(--text-muted, #64748b);
+    font-size: 0.75rem;
+    margin-right: 0.35rem;
+}
+
+.ac-empty {
+    padding: 0.5rem 0.75rem;
+    color: var(--text-muted, #64748b);
+    font-size: 0.8125rem;
+}
+
+/* Dropdown autocomplete di dalam tabel modal: biarkan keluar dari container scroll */
+.table-responsive {
+    overflow-y: visible;
+}
+
 .shadow-sm { box-shadow: var(--shadow-sm); }
 .shadow { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
