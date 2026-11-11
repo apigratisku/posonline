@@ -347,6 +347,27 @@ function maxQtyForSatuan(stok, konversi) {
     return Math.floor((parseInt(stok, 10) || 0) / konversi);
 }
 
+/**
+ * Sisa stok yang masih boleh dijual untuk satu baris keranjang (dalam satuan terpilih).
+ * Stok sudah dialokasikan ke baris lain dengan produk yang sama (termasuk satuan berbeda),
+ * supaya kasir tidak bisa melebihi stok gudang lewat beberapa baris sekaligus.
+ */
+function getRemainingStok(index) {
+    if (index < 0 || index >= cart.length) return 0;
+    var item = cart[index];
+    var used = 0;
+    cart.forEach(function (other, i) {
+        if (i !== index && other.produk_id === item.produk_id) {
+            used += (parseFloat(other.qty) || 0) * (parseInt(other.konversi, 10) || 1);
+        }
+    });
+    var sisa = (parseInt(item.stok, 10) || 0) - used;
+    if (sisa <= 0) return 0;
+    var konversi = parseInt(item.konversi, 10) || 1;
+    if (konversi < 1) konversi = 1;
+    return Math.floor(sisa / konversi);
+}
+
 function addToCart(produk) {
     if (!produk || !produk.id) {
         showNotification('error', 'Data produk tidak valid');
@@ -367,7 +388,7 @@ function addToCart(produk) {
     });
     if (existingIndex >= 0) {
         var existing = cart[existingIndex];
-        var maxQty = maxQtyForSatuan(existing.stok, existing.konversi);
+        var maxQty = getRemainingStok(existingIndex);
         var newQty = existing.qty + 1;
         if (newQty > maxQty) {
             showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + maxQty + ' ' + (existing.satuan_nama || ''));
@@ -399,6 +420,18 @@ function addToCart(produk) {
         newItem.harga = getHargaSatuan(newItem, newItem.konversi);
         newItem.subtotal = newItem.harga;
         cart.push(newItem);
+        // Batasi qty awal bila sisa stok produk ini sudah terpakai baris lain
+        var newIndex = cart.length - 1;
+        var maxQtyNew = getRemainingStok(newIndex);
+        if (maxQtyNew < newItem.qty) {
+            if (maxQtyNew <= 0) {
+                cart.splice(newIndex, 1);
+                showNotification('error', 'Stok produk habis');
+                return;
+            }
+            newItem.qty = maxQtyNew;
+            newItem.subtotal = (newItem.qty * newItem.harga) - newItem.diskon;
+        }
     }
     renderCart();
     calculateTotal();
@@ -418,7 +451,7 @@ function updateQty(index, qty) {
         removeFromCart(index);
         return;
     }
-    var maxQty = maxQtyForSatuan(cart[index].stok, cart[index].konversi);
+    var maxQty = getRemainingStok(index);
     if (qty > maxQty) {
         showNotification('error', 'Stok tidak mencukupi. Stok tersedia: ' + maxQty + ' ' + (cart[index].satuan_nama || ''));
         qty = maxQty;
@@ -444,7 +477,7 @@ function changeSatuan(index, satuanId) {
     if (!opt) return;
     if (String(opt.id) === String(item.satuan_id)) return;
 
-    var maxQty = maxQtyForSatuan(item.stok, opt.konversi);
+    var maxQty = getRemainingStok(index);
     if (maxQty < 1) {
         showNotification('error', 'Stok tidak mencukupi untuk satuan ' + opt.nama);
         renderCart();
@@ -493,6 +526,9 @@ function renderCart() {
         cart.forEach(function (item, index) {
             var satuanNama = item.satuan_nama || '-';
             var options = item.satuan_options || [];
+            var maxQty = getRemainingStok(index);
+            var sisaKeranjang = maxQty - item.qty;
+            var stokClass = sisaKeranjang <= 0 ? ' is-out' : (maxQty <= 5 ? ' is-low' : '');
             html += '<div class="pos-cart-item" data-index="' + index + '">';
             html += '<div>';
             html += '<div class="pos-cart-item-name">' + escapeHtml(item.nama) + '</div>';
@@ -508,6 +544,10 @@ function renderCart() {
                 html += '<div class="pos-cart-item-code">Satuan: ' + escapeHtml(satuanNama) + '</div>';
             }
             html += '<div class="pos-cart-item-code">' + escapeHtml(item.kode) + ' &middot; ' + formatCurrency(item.harga) + ' / ' + escapeHtml(satuanNama) + '</div>';
+            html += '<div class="pos-cart-item-stock' + stokClass + '" title="Sisa stok gudang: ' + maxQty + ' ' + escapeHtml(satuanNama) + '">' +
+                'Sisa stok: ' + maxQty + ' ' + escapeHtml(satuanNama) +
+                (sisaKeranjang <= 0 ? ' (terbatas)' : '') +
+                '</div>';
             html += '</div>';
             html += '<button type="button" class="pos-cart-item-delete" onclick="removeFromCart(' + index + ')" aria-label="Hapus"><i class="fas fa-trash"></i></button>';
             html += '<div class="pos-cart-item-footer">';
@@ -635,8 +675,13 @@ function processPayment() {
         }
         var konversi = parseInt(cart[i].konversi, 10) || 1;
         if (konversi < 1) konversi = 1;
-        if (cart[i].qty * konversi > cart[i].stok) {
+        var sisaStok = getRemainingStok(i);
+        if (cart[i].qty * konversi > (parseInt(cart[i].stok, 10) || 0)) {
             showNotification('error', 'Stok tidak mencukupi untuk produk: ' + cart[i].nama);
+            return;
+        }
+        if (cart[i].qty > sisaStok) {
+            showNotification('error', 'Stok tidak mencukupi untuk produk: ' + cart[i].nama + '. Sisa: ' + sisaStok);
             return;
         }
     }

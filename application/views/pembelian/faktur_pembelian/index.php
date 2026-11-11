@@ -465,9 +465,31 @@ function bindProdukAutocomplete($row) {
     let activeIndex = -1;
     let matches = [];
 
+    // Menu dipindah ke <body> agar tidak terpotong scroll modal/table.
+    $menu = $menu.detach().appendTo('body');
+
+    function positionMenu() {
+        if (!$menu.hasClass('ac-open')) return;
+        let rect = $input[0].getBoundingClientRect();
+        let top = rect.bottom + 2;
+        let height = Math.min(260, window.innerHeight - top - 12);
+        // Kalau ruang bawah kurang, buka ke atas
+        if (height < 120) {
+            height = Math.min(260, rect.top - 12);
+            top = rect.top - height - 2;
+        }
+        $menu.css({
+            top: top + 'px',
+            left: rect.left + 'px',
+            minWidth: Math.max(rect.width, 220) + 'px',
+            maxHeight: height + 'px'
+        });
+    }
+
     function closeMenu() {
         $menu.removeClass('ac-open').empty();
         activeIndex = -1;
+        $(window).off('resize.acmenu scroll.acmenu');
     }
 
     function renderMenu(list) {
@@ -477,6 +499,8 @@ function bindProdukAutocomplete($row) {
         if (!list.length) {
             $menu.html('<div class="ac-empty">Obat tidak ditemukan</div>');
             $menu.addClass('ac-open');
+            positionMenu();
+            $(window).on('resize.acmenu scroll.acmenu', positionMenu);
             return;
         }
 
@@ -487,6 +511,8 @@ function bindProdukAutocomplete($row) {
                 + `</div>`;
         });
         $menu.html(html).addClass('ac-open');
+        positionMenu();
+        $(window).on('resize.acmenu scroll.acmenu', positionMenu);
     }
 
     function highlight() {
@@ -576,9 +602,14 @@ function escapeHtml(text) {
 
 // Tutup semua dropdown autocomplete yang masih terbuka
 $(document).on('click', function(e) {
-    if (!$(e.target).closest('.ac-wrap').length) {
+    if (!$(e.target).closest('.ac-wrap').length && !$(e.target).closest('.ac-menu').length) {
         $('.ac-menu.ac-open').removeClass('ac-open').empty();
     }
+});
+
+// Tutup saat modal ditutup supaya menu tidak nyangkut di layar
+$(document).on('hidden.bs.modal', function() {
+    $('.ac-menu.ac-open').removeClass('ac-open').empty();
 });
 
 function addItemRow(opts = {}) {

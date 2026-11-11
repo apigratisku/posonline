@@ -330,6 +330,28 @@
     color: #64748b;
 }
 
+.pos-cart-item-stock {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #047857;
+    background: #ecfdf5;
+    cursor: help;
+}
+
+.pos-cart-item-stock.is-low {
+    color: #b45309;
+    background: #fffbeb;
+}
+
+.pos-cart-item-stock.is-out {
+    color: #b91c1c;
+    background: #fef2f2;
+}
+
 .pos-cart-item-satuan {
     margin: 0.25rem 0 0.15rem;
     padding: 0.2rem 0.5rem;

@@ -1290,16 +1290,16 @@ body.has-mobile-nav {
     position: relative;
 }
 
+/* Position fixed + di-append ke <body> oleh JS supaya tidak terpotong
+   oleh overflow scroll modal-body / .table-responsive */
 .ac-menu {
-    position: absolute;
-    top: 100%;
+    position: fixed;
+    top: 0;
     left: 0;
-    right: 0;
-    z-index: 1080;
+    z-index: 1090;
     max-height: 260px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    margin-top: 2px;
     background: var(--bg-white);
     border: 1px solid var(--border);
     border-radius: var(--radius);
