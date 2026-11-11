@@ -56,6 +56,9 @@ if (isset($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
     }
 }
 
+// Timezone GMT+8 (WITA) — dipakai semua date()/time() di app (models, log, created_at)
+date_default_timezone_set('Asia/Makassar');
+
 /*
  *---------------------------------------------------------------
  * APPLICATION ENVIRONMENT
