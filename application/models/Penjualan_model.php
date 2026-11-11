@@ -124,6 +124,73 @@ class Penjualan_model extends MY_Model {
     }
     
     /**
+     * Cancel penjualan.
+     * - draft: hanya update status (stok belum pernah keluar)
+     * - completed: kembalikan stok ke gudang via kartu stok tipe "masuk",
+     *   dan kurangi poin member kalau transaksi pernah menambah poin.
+     * Dipanggil dalam transaksi oleh controller.
+     */
+    public function cancel_with_stock_return($id, $alasan = '') {
+        $penjualan = $this->get_by_id($id);
+        if (!$penjualan || $penjualan->status == 'cancelled') {
+            return false;
+        }
+
+        if ($penjualan->status == 'draft') {
+            // Belum ada stok keluar & belum ada poin masuk
+            return $this->update($id, array('status' => 'cancelled'));
+        }
+
+        $details = $this->get_details($id);
+        if (empty($details)) {
+            return false;
+        }
+
+        $this->load->model('kartu_stok_model');
+
+        foreach ($details as $detail) {
+            $satuan_id = isset($detail->satuan_id) ? intval($detail->satuan_id) : intval($detail->satuan_jual_id);
+            $konversi = 1;
+            if ($satuan_id && intval($detail->satuan_beli_id) && $satuan_id === intval($detail->satuan_beli_id)) {
+                $konversi = intval($detail->satuan_konversi) > 0 ? intval($detail->satuan_konversi) : 1;
+            }
+            // Kartu stok selalu dalam satuan jual terkecil
+            $qty_terkecil = floatval($detail->qty) * $konversi;
+
+            $kartu_data = array(
+                'produk_id' => $detail->produk_id,
+                'gudang_id' => $penjualan->gudang_id,
+                'tanggal' => date('Y-m-d'),
+                'referensi' => $penjualan->no_penjualan,
+                'tipe' => 'masuk',
+                'qty_masuk' => $qty_terkecil,
+                'qty_keluar' => 0,
+                'harga' => $detail->harga,
+                'keterangan' => 'Pembatalan penjualan: ' . $penjualan->no_penjualan
+                    . ($alasan != '' ? ' (' . $alasan . ')' : '')
+            );
+            if (!$this->kartu_stok_model->insert_kartu_stok($kartu_data)) {
+                return false;
+            }
+        }
+
+        // Kembalikan poin member yang pernah diberikan (1 poin per Rp1.000 dari total)
+        if ($penjualan->pelanggan_id) {
+            $this->load->model('pelanggan_model');
+            $pelanggan = $this->pelanggan_model->get_by_id($penjualan->pelanggan_id);
+            if ($pelanggan && isset($pelanggan->membership_id) && $pelanggan->membership_id) {
+                $poin = intval(floor(floatval($penjualan->total) / 1000));
+                if ($poin > 0) {
+                    $poin_sekarang = isset($pelanggan->poin) ? intval($pelanggan->poin) : 0;
+                    $this->pelanggan_model->update($pelanggan->id, array('poin' => max($poin_sekarang - $poin, 0)));
+                }
+            }
+        }
+
+        return $this->update($id, array('status' => 'cancelled'));
+    }
+
+    /**
      * Apply period and optional kasir filter
      */
     protected function apply_period_filter($start_date, $end_date, $user_id = null) {

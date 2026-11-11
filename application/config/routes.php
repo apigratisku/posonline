@@ -182,6 +182,7 @@ $route['penjualan/daftar-penjualan/ajax_list'] = 'Penjualan/DaftarPenjualan/ajax
 $route['penjualan/daftar-penjualan/ajax_get/(:num)'] = 'Penjualan/DaftarPenjualan/ajax_get/$1';
 $route['penjualan/daftar-penjualan/ajax_complete/(:num)'] = 'Penjualan/DaftarPenjualan/ajax_complete/$1';
 $route['penjualan/daftar-penjualan/ajax_cancel/(:num)'] = 'Penjualan/DaftarPenjualan/ajax_cancel/$1';
+$route['penjualan/daftar-penjualan/ajax_cancel_bulk'] = 'Penjualan/DaftarPenjualan/ajax_cancel_bulk';
 
 $route['penjualan/pesanan-penjualan'] = 'Penjualan/PesananPenjualan/index';
 $route['penjualan/pesanan-penjualan/ajax_list'] = 'Penjualan/PesananPenjualan/ajax_list';

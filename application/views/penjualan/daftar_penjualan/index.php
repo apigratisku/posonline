@@ -6,6 +6,7 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
 <input type="hidden" id="posStoreName" value="<?= htmlspecialchars($toko_nama) ?>">
 <input type="hidden" id="posStoreAddress" value="<?= htmlspecialchars($toko_alamat) ?>">
 <input type="hidden" id="posStorePhone" value="<?= htmlspecialchars($toko_telepon) ?>">
+<input type="hidden" id="isAdminCancel" value="<?= !empty($is_admin) ? '1' : '0' ?>">
 
 <div class="page-header d-flex justify-content-between align-items-center">
     <div>
@@ -40,6 +41,11 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
         <table id="penjualanTable" class="table table-striped table-bordered" style="width:100%">
             <thead>
                 <tr>
+                    <?php if (!empty($is_admin)) { ?>
+                    <th class="no-sort text-center" style="width:38px">
+                        <input type="checkbox" id="checkAllPenjualan" title="Pilih semua">
+                    </th>
+                    <?php } ?>
                     <th>No Penjualan</th>
                     <th>Pelanggan</th>
                     <th>Gudang</th>
@@ -47,11 +53,54 @@ $toko_telepon = isset($profil_toko) && !empty($profil_toko->telepon) ? $profil_t
                     <th>Total</th>
                     <th>Status</th>
                     <th>Aksi</th>
+                    <th class="d-none">ID</th>
                 </tr>
             </thead>
             <tbody>
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Toolbar aksi massal -->
+<div class="card mt-2 d-none" id="bulkActionBar">
+    <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+        <span class="fw-semibold"><span id="bulkSelectedCount">0</span> transaksi dipilih</span>
+        <button type="button" class="btn btn-sm btn-danger" onclick="confirmCancelBulk()">
+            <i class="fas fa-times"></i> Batalkan Transaksi
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearBulkSelection()">
+            Bersihkan Pilihan
+        </button>
+    </div>
+</div>
+
+<!-- Modal alasan pembatalan -->
+<div class="modal fade" id="cancelReasonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Batalkan Transaksi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="cancelReasonInfo" class="mb-2"></p>
+                <div class="alert alert-warning d-none" id="cancelStockAlert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Transaksi ini sudah <strong>completed</strong>. Pembatalan akan
+                    <strong>mengembalikan stok barang</strong> ke gudang dan
+                    <strong>mengurangi poin member</strong> jika ada.
+                </div>
+                <label class="form-label">Alasan Pembatalan <span class="text-muted">(opsional)</span></label>
+                <textarea class="form-control" id="cancelReason" rows="3" maxlength="255" placeholder="Contoh: salah input, barang dikembalikan pelanggan, dll."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmCancel" onclick="doCancel()">
+                    <i class="fas fa-times"></i> Ya, Batalkan
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -63,20 +112,139 @@ $(document).ready(function() {
             type: 'POST'
         },
         columns: [
+            {
+                // Kolom checkbox: data = id penjualan (kolom terkirim terakhir dari server)
+                data: 7,
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    if (String(row[5]).indexOf('CANCELLED') > -1) {
+                        return '<input type="checkbox" class="row-check" disabled title="Sudah dibatalkan">';
+                    }
+                    return '<input type="checkbox" class="row-check" value="' + data + '">';
+                }
+            },
             { data: 0 },
             { data: 1 },
             { data: 2 },
             { data: 3 },
             { data: 4 },
             { data: 5 },
-            { data: 6, orderable: false, searchable: false }
-        ]
+            { data: 6, orderable: false, searchable: false },
+            { data: 7, visible: false, searchable: false }
+        ],
+        drawCallback: function() {
+            // Setiap kali DataTables render ulang (pindah halaman / cari / reload)
+            refreshBulkBar();
+        }
     });
-    
+
+    // Pilih semua (halaman saat ini)
+    $('#checkAllPenjualan').on('change', function() {
+        var checked = $(this).prop('checked');
+        $('#penjualanTable tbody .row-check').prop('checked', checked);
+        refreshBulkBar();
+    });
+
+    // Delegasi karena DataTables re-render tbody setiap pindah halaman/cari
+    $('#penjualanTable tbody').on('change', '.row-check', function() {
+        refreshBulkBar();
+    });
+
     // Load printer setting
     var savedPrinterType = localStorage.getItem('pos_printer_type') || 'browser';
     setPrinterType(savedPrinterType);
 });
+
+/** Update toolbar aksi massal sesuai jumlah checkbox tercentang */
+function refreshBulkBar() {
+    var total = $('#penjualanTable tbody .row-check').length;
+    var checked = $('#penjualanTable tbody .row-check:checked').length;
+    $('#bulkSelectedCount').text(checked);
+    $('#bulkActionBar').toggleClass('d-none', checked === 0);
+    $('#checkAllPenjualan').prop('checked', total > 0 && checked === total);
+}
+
+function clearBulkSelection() {
+    $('#penjualanTable tbody .row-check').prop('checked', false);
+    $('#checkAllPenjualan').prop('checked', false);
+    refreshBulkBar();
+}
+
+function getSelectedIds() {
+    return $('#penjualanTable tbody .row-check:checked').map(function() {
+        return $(this).val();
+    }).get();
+}
+
+// State modal pembatalan
+var cancelMode = 'single'; // 'single' | 'bulk'
+var cancelTargetId = null;
+
+/** Modal alasan pembatalan untuk 1 transaksi */
+function cancelData(id, isCompleted) {
+    cancelMode = 'single';
+    cancelTargetId = id;
+
+    $('#cancelReasonInfo').html('Batalkan penjualan <strong>ID ' + id + '</strong>?');
+    $('#cancelStockAlert').toggleClass('d-none', isCompleted != 1);
+    $('#cancelReason').val('');
+    $('#cancelReasonModal').modal('show');
+}
+
+/** Modal alasan pembatalan massal */
+function confirmCancelBulk() {
+    var ids = getSelectedIds();
+    if (!ids.length) {
+        showNotification('warning', 'Pilih transaksi terlebih dahulu');
+        return;
+    }
+
+    cancelMode = 'bulk';
+    cancelTargetId = ids;
+    $('#cancelReasonInfo').html('Batalkan <strong>' + ids.length + ' transaksi</strong> sekaligus?');
+    $('#cancelStockAlert').removeClass('d-none');
+    $('#cancelReason').val('');
+    $('#cancelReasonModal').modal('show');
+}
+
+/** Eksekusi pembatalan (tunggu modal alasan ditutup dulu) */
+function doCancel() {
+    var alasan = $('#cancelReason').val();
+    var url, payload;
+
+    if (cancelMode === 'single') {
+        url = baseUrl + 'penjualan/daftar-penjualan/ajax_cancel/' + cancelTargetId;
+        payload = { alasan: alasan };
+    } else {
+        url = baseUrl + 'penjualan/daftar-penjualan/ajax_cancel_bulk';
+        payload = { ids: cancelTargetId, alasan: alasan };
+    }
+
+    showLoading();
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: payload,
+        dataType: 'json',
+        success: function(response) {
+            hideLoading();
+            if (response.status) {
+                $('#cancelReasonModal').modal('hide');
+                showNotification('success', response.message);
+                clearBulkSelection();
+                reloadDataTable('penjualanTable');
+            } else {
+                showNotification('error', response.message);
+            }
+        },
+        error: function(xhr, status) {
+            hideLoading();
+            showNotification('error', 'Gagal membatalkan penjualan' + (xhr.status ? ' (HTTP ' + xhr.status + ')' : ''));
+        }
+    });
+}
 
 function viewData(id) {
     showLoading();
@@ -478,30 +646,6 @@ function completeData(id) {
             error: function() {
                 hideLoading();
                 showNotification('error', 'Gagal menyelesaikan penjualan');
-            }
-        });
-    });
-}
-
-function cancelData(id) {
-    showConfirm('Batalkan penjualan ini?', function() {
-        showLoading();
-        $.ajax({
-            url: baseUrl + 'penjualan/daftar-penjualan/ajax_cancel/' + id,
-            type: 'POST',
-            dataType: 'json',
-            success: function(response) {
-                hideLoading();
-                if (response.status) {
-                    showNotification('success', response.message);
-                    reloadDataTable('penjualanTable');
-                } else {
-                    showNotification('error', response.message);
-                }
-            },
-            error: function() {
-                hideLoading();
-                showNotification('error', 'Gagal membatalkan penjualan');
             }
         });
     });
