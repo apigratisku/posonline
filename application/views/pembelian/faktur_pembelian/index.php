@@ -161,6 +161,11 @@
                             <i class="fas fa-save"></i> Simpan Faktur
                         </button>
                     <?php endif; ?>
+                    <?php if ($this->auth->has_permission('pembelian', 'delete')): ?>
+                        <button type="button" class="btn btn-outline-danger" id="btnDeleteFromForm" onclick="deleteDataFromForm()">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -732,11 +737,85 @@ function addData() {
     $('#fakturPembelianForm')[0].reset();
     $('#faktur_id').val('');
     $('#fakturModalTitle').text('Tambah Faktur Pembelian');
+    // Tombol hapus hanya relevan saat edit
+    $('#btnDeleteFromForm').addClass('d-none');
     $('#fakturItemsBody').empty();
     $('#diskon_tipe').val('nominal');
     toggleDiskonTipe();
     addItemRow();
     $('#fakturPembelianModal').modal('show');
+}
+
+/**
+ * Load data faktur untuk diedit.
+ * Item direkonstruksi dari diskon nominal yang tersimpan (tipe nominal).
+ */
+function editData(id) {
+    showLoading();
+    $.ajax({
+        url: baseUrl + 'pembelian/faktur/ajax_get/' + id,
+        type: 'GET',
+        dataType: 'json',
+        success: function(res) {
+            hideLoading();
+            if (!res.status) {
+                showNotification('error', res.message);
+                return;
+            }
+
+            let data = res.data.faktur;
+            let details = res.data.details || [];
+
+            $('#fakturPembelianForm')[0].reset();
+            $('#faktur_id').val(data.id);
+            $('#fakturModalTitle').text('Edit Faktur Pembelian');
+            $('#btnDeleteFromForm').removeClass('d-none');
+
+            $('#no_faktur').val(data.no_faktur);
+            // PO lama mungkin sudah tidak ada di daftar (status berubah) -> tambahkan opsi
+            if (data.po_id && !$('#po_id option[value="' + data.po_id + '"]').length) {
+                $('#po_id').append('<option value="' + data.po_id + '">' + escapeHtml(data.no_po || ('PO #' + data.po_id)) + '</option>');
+            }
+            $('#po_id').val(data.po_id || '');
+            $('#supplier_id').val(data.supplier_id);
+            $('#jenis_pembayaran_id').val(data.jenis_pembayaran_id || '');
+            $('#tanggal').val(data.tanggal);
+            $('#jatuh_tempo').val(data.jatuh_tempo || '');
+
+            // Diskon global disimpan nominal di DB; pajak juga diisi dari data tersimpan
+            $('#diskon_tipe').val('nominal');
+            toggleDiskonTipe();
+            $('#diskon').val(data.diskon || 0);
+            $('#pajak').val(data.pajak || 0);
+            // Pastikan total ikut terhitung ulang dari nilai yang baru dimuat
+            calcTotal();
+
+            $('#fakturItemsBody').empty();
+            if (details.length > 0) {
+                details.forEach(function(d) {
+                    addItemRow({
+                        produkId: d.produk_id,
+                        produkLabel: (d.produk_kode || '') + ' - ' + (d.produk_nama || ''),
+                        satuanBeliId: d.satuan_beli_id || '',
+                        qty: d.qty,
+                        harga: d.harga,
+                        diskon: d.diskon || 0,
+                        diskonTipe: 'nominal',
+                        noBatch: d.no_batch || '',
+                        expiredDate: d.expired_date || ''
+                    });
+                });
+            } else {
+                addItemRow();
+            }
+
+            $('#fakturPembelianModal').modal('show');
+        },
+        error: function() {
+            hideLoading();
+            showNotification('error', 'Gagal memuat data');
+        }
+    });
 }
 
 function submitFakturForm() {
@@ -993,7 +1072,7 @@ function payFromView() {
 }
 
 function deleteData(id) {
-    showConfirm('Hapus data ini?', function() {
+    showConfirm('Hapus data ini? Data item dan mutasi kartu stok terkait juga akan dihapus.', function() {
         showLoading();
         $.ajax({
             url: baseUrl + 'pembelian/faktur/ajax_delete/' + id,
@@ -1014,5 +1093,13 @@ function deleteData(id) {
             }
         });
     });
+}
+
+/** Hapus dari dalam modal edit (pakai id tersembunyi di form) */
+function deleteDataFromForm() {
+    let id = $('#faktur_id').val();
+    if (!id) return;
+    deleteData(id);
+    $('#fakturPembelianModal').modal('hide');
 }
 </script>

@@ -4,6 +4,9 @@
  * Combines all verification reports into one comprehensive document
  */
 
+// Timezone GMT+8 (WITA)
+date_default_timezone_set('Asia/Makassar');
+
 define('BASEPATH', __DIR__ . '/');
 define('APPPATH', __DIR__ . '/application/');
 

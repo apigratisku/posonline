@@ -66,13 +66,31 @@ class FakturPembelian extends MY_Controller {
         $this->datatable_json($result);
     }
     
+    /**
+     * Cek user login adalah admin.
+     * Aksi hapus faktur (termasuk rollback kartu stok) adalah aksi sensitif —
+     * hanya role admin yang boleh.
+     */
+    private function is_admin() {
+        $peran_kode = $this->peran ? $this->peran->kode : $this->session->userdata('peran_kode');
+        return strtolower(trim((string) $peran_kode)) === 'admin';
+    }
+
     private function get_action_buttons($id, $status) {
         $buttons = '';
         if ($this->auth->has_permission('pembelian', 'view')) {
             $buttons .= '<button class="btn btn-sm btn-info" onclick="viewData(' . $id . ')" title="Lihat"><i class="fas fa-eye"></i></button> ';
         }
+        if ($this->auth->has_permission('pembelian', 'update')) {
+            $buttons .= '<button class="btn btn-sm btn-warning" onclick="editData(' . $id . ')" title="Edit"><i class="fas fa-edit"></i></button> ';
+        }
+        // Tandai Lunas hanya relevan untuk faktur yang belum lunas
         if ($status == 'unpaid' && $this->auth->has_permission('pembelian', 'update')) {
             $buttons .= '<button class="btn btn-sm btn-success" onclick="payInvoice(' . $id . ')" title="Tandai Lunas"><i class="fas fa-check-circle"></i></button> ';
+        }
+        // Hapus data: khusus admin
+        if ($this->is_admin()) {
+            $buttons .= '<button class="btn btn-sm btn-danger" onclick="deleteData(' . $id . ')" title="Hapus (Admin)"><i class="fas fa-trash"></i></button> ';
         }
         return $buttons;
     }
@@ -131,7 +149,10 @@ class FakturPembelian extends MY_Controller {
             : max($diskonInput, 0);
         $pajak = floatval($this->input->post('pajak')) ?: 0;
         $total = $subtotal - $diskon + $pajak;
-        
+
+        // Ambil data lama (untuk update) supaya status pembayaran tidak berubah
+        $existing = $id ? $this->faktur_pembelian_model->get_by_id($id) : null;
+
         $data = array(
             'no_faktur' => $no_faktur,
             'po_id' => $this->input->post('po_id') ?: null,
@@ -143,18 +164,32 @@ class FakturPembelian extends MY_Controller {
             'diskon' => $diskon,
             'pajak' => $pajak,
             'total' => $total,
-            'status' => 'unpaid'
+            // Status lama dipertahankan (unpaid/partial/paid) saat edit
+            'status' => $existing ? $existing->status : 'unpaid'
         );
-        
+
         $this->db->trans_start();
-        
+
         if ($id) {
-            $this->faktur_pembelian_model->update($id, $data);
+            // Hapus mutasi kartu stok "masuk" lama supaya dibuat ulang dari item terbaru.
+            // Nomor faktur bisa berubah saat edit, jadi hapus yang memakai nomor lama & baru.
+            if ($existing && $existing->no_faktur !== $no_faktur) {
+                $this->db->where('referensi', $existing->no_faktur);
+                $this->db->where('tipe', 'masuk');
+                $this->db->delete('kartu_stok');
+            }
+            $this->db->where('referensi', $no_faktur);
+            $this->db->where('tipe', 'masuk');
+            $this->db->delete('kartu_stok');
+
+            // Hapus detail lama, akan di-insert ulang dari item terbaru
             $this->db->where('faktur_id', $id)->delete('faktur_pembelian_detail');
+
+            $this->faktur_pembelian_model->update($id, $data);
         } else {
             $id = $this->faktur_pembelian_model->insert($data);
         }
-        
+
         // Insert details and add stock if po_id is empty
         $this->load->model('kartu_stok_model');
         foreach ($items as $item) {
@@ -170,9 +205,9 @@ class FakturPembelian extends MY_Controller {
                 'subtotal' => ($item['qty'] * $item['harga']) - (isset($item['diskon']) ? $item['diskon'] : 0)
             );
             $this->faktur_pembelian_detail_model->insert($detail_data);
-            
-            // Sync stock if no PO
-            if (empty($data['po_id']) && !$this->input->post('id')) { // only add stock on insert, not update (simplification)
+
+            // Sync stock if no PO (juga saat edit: kartu stok lama sudah dihapus di atas)
+            if (empty($data['po_id'])) {
                 $produk = $this->master_produk_model->get_by_id($item['produk_id']);
                 $konversi = ($produk && (int) $produk->satuan_konversi > 0) ? (int) $produk->satuan_konversi : 1;
                 $qty_terkecil = (float) $item['qty'] * $konversi;
@@ -285,6 +320,32 @@ class FakturPembelian extends MY_Controller {
             ));
         } else {
             $this->ajax_response(false, 'Data tidak ditemukan');
+        }
+    }
+
+    /**
+     * AJAX Delete Faktur Pembelian — khusus role admin.
+     * Menghapus faktur, detail item, dan kartu stok "masuk" yang direferensikan.
+     */
+    public function ajax_delete($id) {
+        $this->check_permission('pembelian', 'delete');
+
+        // Hanya admin yang boleh hapus transaksi pembelian
+        if (!$this->is_admin()) {
+            $this->ajax_response(false, 'Hanya role admin yang dapat menghapus data faktur pembelian');
+            return;
+        }
+
+        $faktur = $this->faktur_pembelian_model->get_by_id($id);
+        if (!$faktur) {
+            $this->ajax_response(false, 'Data tidak ditemukan');
+            return;
+        }
+
+        if ($this->faktur_pembelian_model->delete_with_relations($id)) {
+            $this->ajax_response(true, 'Data berhasil dihapus');
+        } else {
+            $this->ajax_response(false, 'Gagal menghapus data');
         }
     }
 

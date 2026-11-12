@@ -55,6 +55,34 @@ class Faktur_pembelian_model extends MY_Model {
         return $this->db->get()->row();
     }
     
+    /**
+     * Hapus faktur beserta detail item dan kartu stok "masuk" yang direferensikan
+     * ke no_faktur ini. Dipakai aksi hapus (khusus admin).
+     */
+    public function delete_with_relations($id) {
+        $faktur = $this->get_by_id($id);
+        if (!$faktur) {
+            return false;
+        }
+
+        $this->db->trans_start();
+
+        // Hapus mutasi kartu stok "masuk" hasil faktur ini
+        $this->db->where('referensi', $faktur->no_faktur);
+        $this->db->where('tipe', 'masuk');
+        $this->db->delete('kartu_stok');
+
+        // Hapus detail item faktur
+        $this->db->where('faktur_id', $id)->delete('faktur_pembelian_detail');
+
+        // Hapus faktur utama
+        $this->db->where($this->primary_key, $id)->delete($this->table);
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
     public function get_details($faktur_id) {
         $this->db->select('fpd.*, mp.kode as produk_kode, mp.nama as produk_nama, ms.nama as satuan_beli_nama');
         $this->db->from('faktur_pembelian_detail fpd');

@@ -92,7 +92,11 @@ $db['default'] = array(
 	'compress' => FALSE,
 	'stricton' => FALSE,
 	'failover' => array(),
-	'save_queries' => TRUE
+	'save_queries' => TRUE,
+	// Timezone GMT+8 (WITA) untuk session MySQL — semua fungsi tanggal di SQL
+	// (NOW(), CURRENT_TIMESTAMP, DATE_*, TIMESTAMPDIFF) ikut GMT+8.
+	// Diterapkan otomatis oleh application/hooks/Timezone_hook.php.
+	'timezone' => '+08:00'
 );
 
 $local_config = APPPATH . 'config/database.local.php';

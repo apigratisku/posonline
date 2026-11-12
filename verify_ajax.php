@@ -4,6 +4,9 @@
  * Verifies AJAX endpoints and JavaScript in views
  */
 
+// Timezone GMT+8 (WITA)
+date_default_timezone_set('Asia/Makassar');
+
 // No need to load CodeIgniter for file scanning
 define('APPPATH', __DIR__ . '/application/');
 
