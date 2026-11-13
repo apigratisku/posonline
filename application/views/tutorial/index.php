@@ -2,6 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 $shot_dir = FCPATH . 'assets/uploads/tutorial/';
+$total_langkah = count($steps);
 ?>
 <div class="page-header">
     <h1 class="page-title">Cara Penggunaan Aplikasi</h1>
@@ -11,7 +12,7 @@ $shot_dir = FCPATH . 'assets/uploads/tutorial/';
 <div class="card mb-4">
     <div class="card-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
         <div>
-            <h5 class="mb-1"><i class="fas fa-book-open text-primary me-2"></i>Panduan 20 Langkah</h5>
+            <h5 class="mb-1"><i class="fas fa-book-open text-primary me-2"></i>Panduan <?= $total_langkah ?> Langkah</h5>
             <p class="text-muted mb-0 small">
                 Panduan ini disusun khusus untuk pengguna awam. Tidak ada istilah teknis &mdash;
                 cukup ikuti urutan langkah berikut.
@@ -32,7 +33,11 @@ $shot_dir = FCPATH . 'assets/uploads/tutorial/';
     <div class="card-body">
         <h5 class="mb-2"><i class="fas fa-key text-primary me-2"></i>Akun Percobaan (Demo)</h5>
         <p class="mb-1">Nama Pengguna : <strong>demo</strong></p>
-        <p class="mb-0">Kata Sandi : <strong>demo123</strong></p>
+        <p class="mb-1">Kata Sandi : <strong>demo123</strong></p>
+        <p class="mb-0 small text-muted">
+            Akun ini khusus untuk demo: username, kata sandi, dan peran tidak dapat diubah,
+            dan akun ini tidak dapat dihapus.
+        </p>
     </div>
 </div>
 

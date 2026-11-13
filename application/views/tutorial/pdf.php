@@ -70,6 +70,9 @@ $shot_dir = FCPATH . 'assets/uploads/tutorial/';
     <div class="credential-box">
         <strong><i class="fas fa-key me-1"></i>Akun untuk mencoba:</strong>
         Nama Pengguna <strong>demo</strong> &nbsp;|&nbsp; Kata Sandi <strong>demo123</strong>
+        <div class="small text-muted mt-1">
+            Akun demo bersifat khusus: username, kata sandi, dan peran tidak dapat diubah, dan akun ini tidak dapat dihapus.
+        </div>
     </div>
 
     <div class="mb-4">

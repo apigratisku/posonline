@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 if (!function_exists('tutorial_steps')) {
 
     /**
-     * Daftar langkah panduan.
+     * Daftar langkah panduan penggunaan aplikasi.
      * Setiap langkah: judul, penjelasan, poin-poin aksi, screenshot (jika ada).
      */
     function tutorial_steps() {
@@ -22,10 +22,10 @@ if (!function_exists('tutorial_steps')) {
                 'Ketik alamat aplikasi yang diberikan admin, contoh: ' . $base . 'auth/login',
                 'Isi kolom <strong>Nama Pengguna</strong> dengan akun Anda. Untuk akun percobaan: <code>demo</code>.',
                 'Isi kolom <strong>Kata Sandi</strong>. Untuk akun percobaan: <code>demo123</code>.',
-                'Klik tombol <strong>Masuk</strong>.',
+                'Klik tombol <strong>Gunakan</strong> pada kotak info akun demo untuk mengisi kolom otomatis, lalu klik <strong>Masuk</strong>.',
                 'Jika berhasil, Anda akan langsung dibawa ke halaman utama (Dashboard).'
             ),
-            'tips' => 'Jika muncul pesan "Nama pengguna atau kata sandi salah", periksa kembali huruf besar/kecil. Hubungi admin jika tetap gagal.',
+            'tips' => 'Akun <code>demo</code> bersifat khusus demo: username, kata sandi, dan peran tidak dapat diubah, serta akun ini tidak bisa dihapus. Halaman <strong>Pengaturan</strong> tidak menampilkan menu Reset Data sehingga data demo tetap aman.',
             'screenshot' => $img . '01-login.png',
             'url' => $base . 'auth/login'
         );
@@ -95,12 +95,12 @@ if (!function_exists('tutorial_steps')) {
 
         $steps[] = array(
             'no' => 6,
-            'judul' => 'Mengatur Kategori, Satuan & Rak',
-            'ringkas' => 'Merapikan pengelompokan barang.',
+            'judul' => 'Mengelompokkan Barang (Kategori & Satuan)',
+            'ringkas' => 'Merapikan pengelompokan dan satuan barang.',
             'langkah' => array(
                 'Buka <strong>Master Data</strong>, lalu pilih <strong>Master Kategori</strong> untuk mengelompokkan barang (contoh: Obat, Vitamin, Alat Kesehatan).',
                 'Pilih <strong>Master Satuan</strong> untuk mengatur satuan jual (box, strip, botol, pcs).',
-                'Pilih <strong>Master Rak</strong> untuk menandai lokasi penyimpanan barang di toko.'
+                'Menu <strong>Master Golongan</strong>, <strong>Master Rak</strong>, <strong>Master Gudang</strong>, <strong>Master Pajak</strong>, dan <strong>Master Membership</strong> juga tersedia di grup Master Data untuk keperluan yang lebih spesifik.'
             ),
             'tips' => 'Pengelompokan yang rapi membuat pencarian produk di kasir jauh lebih cepat.',
             'screenshot' => $img . '06-master-kategori.png',
@@ -109,6 +109,21 @@ if (!function_exists('tutorial_steps')) {
 
         $steps[] = array(
             'no' => 7,
+            'judul' => 'Mengatur Satuan Barang',
+            'ringkas' => 'Menentukan satuan jual yang dipakai di kasir.',
+            'langkah' => array(
+                'Klik menu <strong>Master Data</strong>, lalu <strong>Master Satuan</strong>.',
+                'Klik <strong>Tambah Satuan</strong> untuk membuat satuan baru.',
+                'Isi nama satuan dan singkatan (misalnya <code>Pcs</code> / <code>PCS</code>).',
+                'Simpan. Satuan ini akan muncul sebagai pilihan saat membuat produk baru.'
+            ),
+            'tips' => 'Gunakan singkatan yang pendek agar tampilan di struk kasir lebih rapi.',
+            'screenshot' => $img . '06b-master-satuan.png',
+            'url' => $base . 'masterdata/mastersatuan'
+        );
+
+        $steps[] = array(
+            'no' => 8,
             'judul' => 'Memantau Stok Barang',
             'ringkas' => 'Mengecek jumlah stok yang tersedia.',
             'langkah' => array(
@@ -122,7 +137,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 8,
+            'no' => 9,
             'judul' => 'Mengecek Barang Mendekati Kadaluarsa',
             'ringkas' => 'Menghindari menjual barang kedaluwarsa.',
             'langkah' => array(
@@ -136,7 +151,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 9,
+            'no' => 10,
             'judul' => 'Melakukan Stok Opname',
             'ringkas' => 'Menyesuaikan stok sistem dengan stok fisik.',
             'langkah' => array(
@@ -151,7 +166,37 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 10,
+            'no' => 11,
+            'judul' => 'Menyesuaikan Stok (Penyesuaian & Perpindahan)',
+            'ringkas' => 'Mengoreksi stok karena rusak, hilang, atau pindah lokasi.',
+            'langkah' => array(
+                'Klik menu <strong>Persediaan</strong>, lalu <strong>Penyesuaian Stok</strong> untuk menambah/mengurangi stok secara manual (barang rusak, hilang, atau temuan).',
+                'Pilih <strong>Perpindahan Stok</strong> untuk memindahkan stok antar gudang atau antar rak.',
+                'Pilih produk, isi jumlah, dan tulis alasan penyesuaian atau lokasi tujuan.',
+                'Simpan. Perubahan stok akan tercatat beserta alasannya.'
+            ),
+            'tips' => 'Selalu tulis alasan yang jelas pada setiap penyesuaian supaya mudah dilacak saat audit stok.',
+            'screenshot' => $img . '09b-penyesuaian-stok.png',
+            'url' => $base . 'persediaan/penyesuaian'
+        );
+
+        $steps[] = array(
+            'no' => 12,
+            'judul' => 'Memindahkan Stok Antar Lokasi',
+            'ringkas' => 'Mencatat perpindahan barang antar gudang/rak.',
+            'langkah' => array(
+                'Klik menu <strong>Persediaan</strong>, lalu <strong>Perpindahan Stok</strong>.',
+                'Klik <strong>Tambah Perpindahan</strong>.',
+                'Pilih produk, tentukan lokasi asal dan lokasi tujuan, lalu isi jumlahnya.',
+                'Simpan. Stok akan berkurang di lokasi asal dan bertambah di lokasi tujuan.'
+            ),
+            'tips' => 'Gunakan fitur ini saat barang dipindah ke gudang cadangan atau ke rak lain.',
+            'screenshot' => $img . '09c-perpindahan-stok.png',
+            'url' => $base . 'persediaan/perpindahan'
+        );
+
+        $steps[] = array(
+            'no' => 13,
             'judul' => 'Membuat Pesanan Pembelian',
             'ringkas' => 'Mengatur barang yang akan dibeli dari supplier.',
             'langkah' => array(
@@ -166,7 +211,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 11,
+            'no' => 14,
             'judul' => 'Mencatat Faktur Pembelian (Barang Masuk)',
             'ringkas' => 'Memasukkan barang ke dalam stok.',
             'langkah' => array(
@@ -181,7 +226,23 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 12,
+            'no' => 15,
+            'judul' => 'Mengembalikan Barang ke Supplier (Retur Pembelian)',
+            'ringkas' => 'Mencatat barang yang dikembalikan ke supplier.',
+            'langkah' => array(
+                'Klik menu <strong>Pembelian</strong>, lalu <strong>Retur Pembelian</strong>.',
+                'Klik <strong>Tambah Retur</strong>.',
+                'Pilih nomor faktur pembelian terkait, lalu tentukan produk dan jumlah yang dikembalikan.',
+                'Isi alasan retur (rusak, kedaluwarsa, atau salah kirim).',
+                'Simpan. Stok barang akan berkurang sesuai jumlah yang diretur.'
+            ),
+            'tips' => 'Sertakan nomor faktur asal agar pencatatan retur mudah dicocokkan dengan supplier.',
+            'screenshot' => $img . '15b-retur-pembelian.png',
+            'url' => $base . 'pembelian/retur'
+        );
+
+        $steps[] = array(
+            'no' => 16,
             'judul' => 'Mengelola Data Pelanggan',
             'ringkas' => 'Menyimpan data pembeli setia.',
             'langkah' => array(
@@ -196,7 +257,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 13,
+            'no' => 17,
             'judul' => 'Mengelola Data Supplier',
             'ringkas' => 'Menyimpan daftar pemasok barang.',
             'langkah' => array(
@@ -211,7 +272,22 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 14,
+            'no' => 18,
+            'judul' => 'Mencatat Data Sales / Pelayan',
+            'ringkas' => 'Mengetahui siapa yang melayani penjualan.',
+            'langkah' => array(
+                'Klik menu <strong>Kontak</strong>, lalu <strong>Sales / Pelayan</strong>.',
+                'Klik <strong>Tambah Sales</strong>.',
+                'Isi nama, telepon, dan keterangan.',
+                'Simpan. Data sales dapat dipilih saat membuat transaksi penjualan.'
+            ),
+            'tips' => 'Pencatatan sales memudahkan perhitungan komisi atau penilaian kinerja karyawan.',
+            'screenshot' => $img . '13b-sales.png',
+            'url' => $base . 'kontak/sales'
+        );
+
+        $steps[] = array(
+            'no' => 19,
             'judul' => 'Mengatur Akun Kas & Buku Kas',
             'ringkas' => 'Mencatat uang masuk dan keluar.',
             'langkah' => array(
@@ -226,7 +302,22 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 15,
+            'no' => 20,
+            'judul' => 'Mencatat Transaksi di Buku Kas',
+            'ringkas' => 'Melihat dan mencatat arus kas harian.',
+            'langkah' => array(
+                'Klik menu <strong>Keuangan</strong>, lalu <strong>Buku Kas</strong>.',
+                'Halaman ini menampilkan daftar pemasukan dan pengeluaran beserta saldo.',
+                'Klik <strong>Tambah Transaksi</strong> untuk mencatat uang masuk atau keluar.',
+                'Simpan, dan saldo kas akan langsung diperbarui.'
+            ),
+            'tips' => 'Catat pengeluaran kecil-kecil agar laporan keuangan akhir bulan lebih akurat.',
+            'screenshot' => $img . '14b-buku-kas.png',
+            'url' => $base . 'keuangan/buku-kas'
+        );
+
+        $steps[] = array(
+            'no' => 21,
             'judul' => 'Melihat Laporan',
             'ringkas' => 'Melihat rekap penjualan, pembelian, stok, dan keuangan.',
             'langkah' => array(
@@ -238,19 +329,62 @@ if (!function_exists('tutorial_steps')) {
                 'Tentukan rentang tanggal, lalu klik <strong>Tampilkan</strong> atau <strong>Export</strong>.'
             ),
             'tips' => 'Unduh laporan setiap akhir bulan untuk keperluan pembukuan dan pelaporan.',
-            'screenshot' => $img . '16-laporan-penjualan.png',
+            'screenshot' => $img . '15-laporan-penjualan.png',
             'url' => $base . 'laporan/penjualan'
         );
 
         $steps[] = array(
-            'no' => 16,
+            'no' => 22,
+            'judul' => 'Melihat Laporan Pembelian',
+            'ringkas' => 'Merekap barang yang masuk dari supplier.',
+            'langkah' => array(
+                'Klik menu <strong>Laporan</strong>, lalu <strong>Laporan Pembelian</strong>.',
+                'Tentukan rentang tanggal, lalu klik <strong>Tampilkan</strong>.',
+                'Laporan menampilkan total pembelian, jumlah faktur, dan rincian per supplier.'
+            ),
+            'tips' => 'Bandingkan laporan pembelian dengan faktur fisik untuk memastikan tidak ada faktur terlewat.',
+            'screenshot' => $img . '15b-laporan-pembelian.png',
+            'url' => $base . 'laporan/pembelian'
+        );
+
+        $steps[] = array(
+            'no' => 23,
+            'judul' => 'Melihat Laporan Persediaan',
+            'ringkas' => 'Merekap stok dan nilai persediaan barang.',
+            'langkah' => array(
+                'Klik menu <strong>Laporan</strong>, lalu <strong>Laporan Persediaan</strong>.',
+                'Laporan menampilkan stok setiap produk beserta nilai persediaan.',
+                'Gunakan filter pencarian untuk mengecek produk tertentu.'
+            ),
+            'tips' => 'Laporan ini membantu menghitung aset toko berupa barang yang masih tersedia.',
+            'screenshot' => $img . '15c-laporan-persediaan.png',
+            'url' => $base . 'laporan/persediaan'
+        );
+
+        $steps[] = array(
+            'no' => 24,
+            'judul' => 'Melihat Laporan Keuangan',
+            'ringkas' => 'Merekap arus kas masuk dan keluar.',
+            'langkah' => array(
+                'Klik menu <strong>Laporan</strong>, lalu <strong>Laporan Keuangan</strong>.',
+                'Tentukan periode yang ingin dilihat.',
+                'Laporan menampilkan total pemasukan, pengeluaran, dan saldo akhir kas.'
+            ),
+            'tips' => 'Gunakan laporan ini untuk memantau kesehatan arus kas toko setiap bulan.',
+            'screenshot' => $img . '15d-laporan-keuangan.png',
+            'url' => $base . 'laporan/keuangan'
+        );
+
+        $steps[] = array(
+            'no' => 25,
             'judul' => 'Mengelola Pengguna & Hak Akses',
             'ringkas' => 'Menambah karyawan dan membatasi menu yang boleh diakses.',
             'langkah' => array(
                 'Klik menu <strong>Manajemen Pengguna</strong>, lalu <strong>Daftar Pengguna</strong>.',
                 'Klik <strong>Tambah Pengguna</strong>, isi nama, username, sandi, dan pilih peran (Kasir / Admin / Owner).',
                 'Simpan. Karyawan kini bisa login dengan akunnya sendiri.',
-                'Buka <strong>Peran &amp; Hak Akses</strong> untuk mengatur menu apa saja yang boleh dilihat tiap peran.'
+                'Buka <strong>Peran &amp; Hak Akses</strong> untuk mengatur menu apa saja yang boleh dilihat tiap peran.',
+                'Akun <code>demo</code> tidak dapat diubah atau dihapus demi menjaga kelengkapan data demo.'
             ),
             'tips' => 'Batasi akses kasir hanya ke menu Kasir dan Daftar Penjualan agar data keuangan lebih aman.',
             'screenshot' => $img . '20-pengguna.png',
@@ -258,7 +392,22 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 17,
+            'no' => 26,
+            'judul' => 'Mengatur Peran & Hak Akses',
+            'ringkas' => 'Menentukan menu apa yang boleh diakses setiap peran.',
+            'langkah' => array(
+                'Klik menu <strong>Manajemen Pengguna</strong>, lalu <strong>Peran &amp; Hak Akses</strong>.',
+                'Pilih peran yang ingin diatur (misalnya Kasir atau Staff).',
+                'Centang menu yang boleh diakses: lihat, tambah, ubah, dan hapus.',
+                'Simpan. Pengguna dengan peran tersebut hanya akan melihat menu yang diizinkan.'
+            ),
+            'tips' => 'Atur hak akses sesedikit mungkin agar setiap karyawan hanya mengakses data yang dibutuhkannya.',
+            'screenshot' => $img . '21-peran-hak-akses.png',
+            'url' => $base . 'manajemen/peran'
+        );
+
+        $steps[] = array(
+            'no' => 27,
             'judul' => 'Melihat Log Aktivitas',
             'ringkas' => 'Memantau siapa melakukan apa di aplikasi.',
             'langkah' => array(
@@ -272,7 +421,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 18,
+            'no' => 28,
             'judul' => 'Mengatur Profil Toko',
             'ringkas' => 'Mengubah nama toko, alamat, dan logo.',
             'langkah' => array(
@@ -286,7 +435,7 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 19,
+            'no' => 29,
             'judul' => 'Mengatur Metode Pembayaran',
             'ringkas' => 'Menentukan cara pembeli boleh membayar.',
             'langkah' => array(
@@ -301,7 +450,21 @@ if (!function_exists('tutorial_steps')) {
         );
 
         $steps[] = array(
-            'no' => 20,
+            'no' => 30,
+            'judul' => 'Mengatur Konfigurasi Sistem',
+            'ringkas' => 'Menyesuaikan tampilan dan aturan kerja aplikasi.',
+            'langkah' => array(
+                'Klik menu <strong>Pengaturan</strong>, lalu <strong>Konfigurasi</strong>.',
+                'Atur preferensi aplikasi sesuai kebutuhan toko.',
+                'Klik <strong>Simpan</strong> agar perubahan langsung dipakai.'
+            ),
+            'tips' => 'Menu <strong>Reset Data</strong> hanya tersedia untuk pemilik aplikasi, sehingga data demo pengunjung tetap aman.',
+            'screenshot' => $img . '25-konfigurasi.png',
+            'url' => $base . 'pengaturan/konfigurasi'
+        );
+
+        $steps[] = array(
+            'no' => 31,
             'judul' => 'Keluar dari Aplikasi (Logout)',
             'ringkas' => 'Mengakhiri sesi dengan aman.',
             'langkah' => array(
